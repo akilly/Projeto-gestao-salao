@@ -1,0 +1,6 @@
+{
+  "name": "hanne-baileys-connector", "version": "1.0.0", "private": true, "type": "module",
+  "engines": {"node": ">=22.13.0"},
+  "scripts": {"start": "node --env-file=.env server.mjs", "test": "node --test *.test.mjs"},
+  "dependencies": {"baileys": "7.0.0-rc14", "pino": "9.6.0", "qrcode": "1.5.4"}
+}
