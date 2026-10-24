@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1792409088587,
+      "tag": "0000_big_elektra",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792491515837,
+      "tag": "0001_amazing_giant_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792496235025,
+      "tag": "0002_overconfident_pixie",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792840000000,
+      "tag": "0003_salon_login",
+      "breakpoints": true
+    }
+  ]
+}
