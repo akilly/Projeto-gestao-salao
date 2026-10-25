@@ -4,7 +4,7 @@ Este manual orienta a Hanne no registro de clientes, agenda, atendimentos, receb
 
 ## Acesso e escolha dos dados
 
-Abra https://hanne-atelier.jollysmile16.chatgpt.site e entre com o e-mail e a senha da conta única da Hanne. No primeiro acesso, a titular do projeto usa “Primeiro acesso da titular” para definir essas credenciais. Não envie a senha pelo chat. Esqueci minha senha permite à titular redefinir o acesso com sua conta da plataforma; isso encerra as sessões antigas. A audiência do endereço continua administrada no Sites. No celular, use o botão de menu para abrir as áreas do sistema. A pesquisa no topo ajuda a localizar registros.
+Abra https://hanne-atelier.jollysmile16.chatgpt.site e entre com o e-mail e a senha da conta única da Hanne. No primeiro acesso, a titular do projeto usa **Cadastrar usuário titular**, confirma sua identidade pela hospedagem e define essas credenciais. Não envie a senha pelo chat. **Esqueci minha senha** permite à mesma titular redefinir o acesso; isso encerra as sessões antigas. A audiência do endereço continua administrada no Sites. No celular, use o botão de menu para abrir as áreas do sistema. A pesquisa no topo ajuda a localizar registros.
 
 Antes de digitar, confira a faixa no alto da página. “Demonstração com dados fictícios” indica um ambiente para testar; “Você está nos dados reais” indica a operação do negócio. Use “Abrir dados reais” ou “Ver dados fictícios” para alternar. As bases são separadas e alterações nos exemplos não alimentam o financeiro real. A escolha é lembrada no navegador.
 

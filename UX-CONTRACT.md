@@ -8,7 +8,7 @@ Hanne usa o aplicativo no celular para agenda, conclusão de visitas, recebiment
 
 | Domain / scope | Authoritative source | Source type | Reviewed date |
 |---|---|---|---|
-| Permission model | `docs/DOCUMENTACAO_TECNICA.md` — API e isolamento; `app/chatgpt-auth.ts` | Contrato mantido e implementação de autenticação | 2026-10-20 |
+| Permission model | `docs/DOCUMENTACAO_TECNICA.md` — API e isolamento; `lib/salon-auth.mjs` | Contrato mantido e implementação de autenticação | 2026-10-25 |
 | Data lifecycle | `docs/DOCUMENTACAO_TECNICA.md` — estado e persistência; `public/domain.js` | Contrato e invariantes | 2026-10-20 |
 | Deletion / retention | `public/domain.js` — validateState; `docs/MANUAL_USUARIO.md` — correções | Invariantes e manual | 2026-10-20 |
 | Billing / payment | Histórico de requisitos; `docs/DOCUMENTACAO_TECNICA.md`; `tests/domain.test.mjs` | Requisitos, contrato e testes | 2026-10-20 |
@@ -25,7 +25,7 @@ Hanne usa o aplicativo no celular para agenda, conclusão de visitas, recebiment
 |---|---|---|---|---|
 | Select/Listbox | selectField em public/app.js | HTML select nativo | Popup do navegador/OS aceito | Teclado e seleção no navegador |
 | Date | field e filtros em public/app.js | input date/time/month nativo + public/core.js | Locale e popup do navegador/OS aceitos | Data civil, edição e Escape |
-| Form | openForm + validateVisibleControls + checkFinishStep | public/app.js | Etapas de fechamento e formulários simples | Validação, salvamento e recuperação |
+| Form | openForm + validateVisibleControls + checkFinishStep | public/app.js + public/form-validation.js | Etapas de fechamento, login e formulários simples | Validação, salvamento e recuperação |
 | Scrollbar | Baseline global | public/atelier.css | Gutter e largura por superfície | Computed style e viewport estreito |
 | Toast | toast + syncBanner | public/app.js | Sucesso breve; erro persistente no banner | Recuperação e live region |
 | CRUD | navigateTo, modal, persist e domain | public/app.js + public/domain.js | Consultar antes de operar; com exclusão por plano confirmado | Testes e fluxos no navegador |

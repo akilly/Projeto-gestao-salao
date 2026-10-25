@@ -6,6 +6,12 @@ Aplicação em português para uma profissional. Interface orientada ao celular,
 
 A conta autenticada começa com clientes, histórico, estoque e financeiro vazios. O catálogo inicial contém sugestões editáveis de serviços. A preparação define a data de corte, o valor fixo do espaço e os saldos anteriores. Dados da antiga demonstração no navegador não são enviados ao banco automaticamente.
 
+### Acesso e usuário de teste
+
+No primeiro acesso publicado, escolha **Cadastrar usuário titular**, confirme a identidade da titular pela hospedagem e informe e-mail e senha com pelo menos 12 caracteres. O sistema possui uma única conta titular; não há cadastro público.
+
+Para desenvolvimento local, execute `npm run user:test:create` depois do build. A conta criada somente no D1 local é `teste@hanne.local`, com senha `HanneTeste#2026`. O comando pode receber `TEST_USER_EMAIL` e `TEST_USER_PASSWORD` para usar outras credenciais locais. Nunca use essa conta ou essa senha na publicação.
+
 O fechamento em três etapas registra vários serviços por visita, preço total combinado, consumo em g/ml/unidades, ficha técnica, aplicação de sinais e pagamento parcial. O fechamento inteiro é salvo de forma atômica. Estoque insuficiente impede a operação.
 
 O financeiro separa dívida de clientes, cartões aceitos e repasses efetivamente recebidos. Parcelas preservam os centavos e os vencimentos mensais. Taxas desconhecidas permanecem pendentes; o repasse exige líquido e data conferidos. Sinais anteriores não geram nova receita; a retenção é manual e mantém o dinheiro na data em que entrou.
@@ -22,11 +28,11 @@ As tabelas e metadados de migração estão em db/ e drizzle/. Não alterar migr
 
 ## Validação
 
-`node --test tests/*.test.mjs` testa regras de agenda, CSV, fechamento, estoque, sinais, cartão, fluxo de caixa, autenticação, isolamento de contas e conflitos de gravação. A persistência é exercitada com SQLite real em memória, usando o SQL da migração. O build é realizado pelo helper oficial Sites. A revisão visual usa cua_repl e o supervisor oficial de preview quando disponíveis, com dados fictícios isolados. A suíte desta revisão tem 43 testes.
+`node --test tests/*.test.mjs services/baileys/*.test.mjs` testa regras de agenda, CSV, fechamento, estoque, sinais, cartão, fluxo de caixa, autenticação, isolamento de contas, conector e conflitos de gravação. A persistência é exercitada com SQLite real em memória, usando o SQL da migração. O build é realizado pelo helper oficial Sites. A revisão visual usa navegador local com dados fictícios isolados. A suíte atual tem 106 testes.
 
 ## Pendências conhecidas
 
-IA de classificação/resumo/transcrição, notificações externas, exportação XLSX nativa, login próprio/biometria, restauração e backups automáticos não estão implementados. Exportação CSV, impressão para PDF e cópia JSON são manuais. Histórico de movimentos e valores confirmados não pode ser apagado ou sobrescrito; estornos e correções financeiras por lançamentos de reversão ficam para uma etapa posterior. A retenção de sinal registra uma decisão manual da profissional. Quando há compromisso ativo vinculado, a tela exibe o agendamento e exige uma confirmação explícita para cancelar e reter o sinal na mesma gravação. O valor recebido é preservado sem nova entrada de caixa. A aplicação não estabelece a política contratual.
+IA de classificação/resumo/transcrição, notificações externas, exportação XLSX nativa, biometria, restauração e backups automáticos não estão implementados. Exportação CSV, impressão para PDF e cópia JSON são manuais. Histórico de movimentos e valores confirmados não pode ser apagado ou sobrescrito; estornos e correções financeiras por lançamentos de reversão ficam para uma etapa posterior. A retenção de sinal registra uma decisão manual da profissional. Quando há compromisso ativo vinculado, a tela exibe o agendamento e exige uma confirmação explícita para cancelar e reter o sinal na mesma gravação. O valor recebido é preservado sem nova entrada de caixa. A aplicação não estabelece a política contratual.
 
 ## Demonstração com dados fictícios
 

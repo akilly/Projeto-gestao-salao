@@ -4,7 +4,7 @@ Referência de manutenção da aplicação de atendimentos, finanças e estoque 
 
 ## Arquitetura e execução
 
-O navegador recebe HTML pela rota app/route.ts, depois carrega public/app.js como módulo ES e as folhas public/style.css, public/theme.css e public/atelier.css, nesta ordem. A aplicação usa JavaScript e templates HTML com delegação de eventos. O starter oferece Vinext, React, Vite e Cloudflare Workers, mas as telas de negócio atuais não são componentes React. Alterar components/ui não altera essas telas.
+O navegador recebe HTML pela rota app/route.ts, depois carrega public/app.js como módulo ES e as folhas public/style.css, public/theme.css e public/atelier.css, nesta ordem. A aplicação usa JavaScript e templates HTML com delegação de eventos. Vinext, React, Vite e Cloudflare Workers fornecem o runtime; as telas de negócio atuais usam os módulos em public.
 
 A autenticação de uso é fornecida pela conta única da Hanne em lib/salon-auth.mjs. A plataforma Sites fornece identidade apenas para configurar/recuperar a conta pela titular. A audiência do endereço é configurada separadamente no Sites e estava pública na conferência final desta revisão. Isso não compartilha automaticamente o snapshot de uma conta: a rota de negócio exige identidade, e a API usa a chave do usuário autenticado. A rota de entrada valida a sessão opaca do salão e redireciona para /login quando necessário. O primeiro acesso ainda permite à titular autenticada pela plataforma configurar sua conta. Os caminhos reservados de login, logout e callback pertencem à plataforma. A API verifica o identificador autenticado injetado no cabeçalho; o navegador não escolhe qual titular acessar.
 
@@ -25,17 +25,16 @@ Fluxo de leitura: autenticação → GET da base selecionada → carregamento no
 | public/style.css, public/theme.css e public/atelier.css | Base visual, temas e direção visual final com cartões no celular |
 | app/route.ts | HTML inicial com autenticação e referência aos módulos públicos |
 | app/api/state/route.ts | Adaptador HTTP para o handler compartilhado |
-| app/chatgpt-auth.ts | Leitura da identidade e retorno seguro de autenticação |
-| app/layout.tsx e app/globals.css | Estrutura de compatibilidade do App Router; não são as telas atuais |
+| app/login/route.ts e public/login.js | Tela de entrada, cadastro inicial e recuperação da conta titular |
+| app/layout.tsx | Estrutura de compatibilidade do App Router |
+| lib/salon-auth.mjs | Credenciais, sessão, identidade de bootstrap e autorização das APIs |
 | lib/state-handler.mjs | Isolamento, validação, revisão otimista, snapshot e evento D1 |
-| db/schema.ts e db/index.ts | Esquema Drizzle e adaptador opcional de consultas tipadas |
+| db/schema.ts | Esquema Drizzle usado pela geração de migrações |
 | drizzle | Migração SQL aplicada e seus metadados; histórico preservado |
 | tests | Testes de domínio, utilitários, demonstração, API e renderização mínima |
 | vite.config.ts e build | Configuração Vite e infraestrutura oficial do Worker Sites |
 | scripts | Instalação, seleção do ambiente, execução e infraestrutura do starter |
-| lib/connector* e lib/connectors.ts | Contratos e suporte do starter para conectores; sem integração de negócio ativa |
-| components e hooks | Biblioteca de componentes e utilitários herdada do starter; não forma a interface atual |
-| examples/d1 | Exemplo de uso D1 do starter; não é uma rota de negócio publicada em app |
+| lib/connector* | Contratos e suporte do preview oficial de conectores |
 | vendor | Dependências e código de terceiros preservados com licenças |
 | package.json e pnpm-lock.yaml | Comandos, dependências e versões resolvidas |
 | .openai/hosting.json | Identidade do Site e declaração dos bindings de hospedagem |

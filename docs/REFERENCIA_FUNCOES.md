@@ -167,10 +167,6 @@ As funções abaixo estão comentadas junto à implementação. A lista cobre as
 - `GET`: Encaminha a requisição ao handler de estado e ao banco D1.
 - `POST`: Encaminha a requisição ao handler de estado e ao banco D1.
 
-## app/chatgpt-auth.ts
-
-
-
 ## app/layout.tsx
 
 
@@ -179,24 +175,16 @@ As funções abaixo estão comentadas junto à implementação. A lista cobre as
 
 
 
-## db/index.ts
+## lib/salon-auth.mjs
 
+- `salonIdentity`: valida sessão ativa e libera a identidade confiável da hospedagem somente durante o primeiro cadastro.
+- `authorizeRequest`: recria uma requisição compatível com o Worker e injeta a identidade da sessão para os handlers protegidos.
+- `handleAuth`: atende status, cadastro inicial, login, saída e recuperação da conta titular.
+- `derive`, `digest` e `timingEqual`: derivam e comparam credenciais sem armazenar senha em texto puro.
 
+## public/form-validation.js
 
-
-## app/chatgpt-auth.ts
-
-- `getChatGPTUser`: Lê ID e email autenticados e decodifica o nome quando a plataforma indica UTF-8 percent-encoded; retorna null sem identidade completa.
-- `requireChatGPTUser`: Retorna a identidade autenticada ou redireciona ao login seguro com a rota de retorno.
-- `chatGPTSignInPath`: Monta o caminho reservado de entrada da plataforma com destino relativo validado.
-- `chatGPTSignOutPath`: Monta o caminho reservado de saída da plataforma com destino relativo validado.
-- `safeRelativeReturnPath`: Aceita somente retorno interno, recusa origem externa e evita ciclos nas rotas reservadas de autenticação.
-- `isReservedAuthPath`: Reconhece caminhos que a própria plataforma usa para login, logout e callback.
-- `safeDecodeURIComponent`: Decodifica o nome sem interromper a requisição se a sequência de caracteres for inválida.
-
-## db/index.ts
-
-- `getDb`: fornece cliente Drizzle para o binding DB ou informa sua ausência.
+- `validateVisibleControls`: apresenta erro inline, associa a mensagem ao campo inválido e move o foco sem abrir balões nativos.
 
 
 ## public/theme.js
