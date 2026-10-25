@@ -2,6 +2,7 @@
  * Layout e metadados do App Router. A rota HTML explícita de app/route.ts é a entrada atual da aplicação.
  * Referências: docs/DOCUMENTACAO_TECNICA.md e docs/REFERENCIA_FUNCOES.md.
  */
+/* eslint-disable @next/next/no-css-tags -- o CSS público também atende as respostas HTML explícitas. */
 import type { Metadata } from 'next';
 export const metadata: Metadata = { title: 'Hanne · Gestão do ateliê', description: 'Atendimentos, finanças e estoque em um só lugar, com registros reais e acesso privado.', icons: { icon: '/favicon.svg' } };
 export default function RootLayout({ children }: {

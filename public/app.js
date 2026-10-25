@@ -1,4 +1,5 @@
-import { deleteRecord, deletionBlock, deletionPlan, allCollections } from './deletion.js';
+import { validateVisibleControls } from './form-validation.js';
+import { deletionPlan, allCollections } from './deletion.js';
 /**
  * Interface do ateliê. Fluxo: bootstrap carrega API; render desenha a página; eventos data-action/data-form alteram estado; queueSave/flushSave persistem com revisão. O canal WhatsApp usa APIs próprias e armazenamento separado do financeiro. Valores dos usuários passam por esc antes de compor HTML.
  * Referências: docs/DOCUMENTACAO_TECNICA.md e docs/REFERENCIA_FUNCOES.md.
@@ -9,8 +10,8 @@ import { detailViews } from './destinations-ui.js';
 import { createWhatsAppUI } from './whatsapp.js';
 import { attendanceSummary, previousConsumption, ensureSpaceExpense, rollMonth } from './routine.js?v=records-1';
 import { preferredTheme, applyTheme } from './theme.js';
-import { blankState, stockOf, metrics, periodOf, closeAttendance, paymentEntries, billBalance, billPaid, availableDeposits, cardMethod, METHODS, plusMonths, cents, amount, qty, validateState, retainDeposit } from './domain.js';
-import { localDate, dayOffset, minutes, clock, appointmentConflict, balanceFor, receivedFor, parseCSV, csvCell, demoState } from './core.js';
+import { blankState, stockOf, metrics, periodOf, closeAttendance, paymentEntries, billBalance, billPaid, availableDeposits, cardMethod, METHODS, cents, amount, qty, validateState, retainDeposit } from './domain.js';
+import { localDate, dayOffset, minutes, clock, appointmentConflict, balanceFor, receivedFor, parseCSV, csvCell } from './core.js';
 // Catálogo SVG local; coordenadas são dados visuais e não regras de negócio.
 const icons = { grid: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z', chat: 'M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0 1 19 0Z M7 10h9 M7 14h5', calendar: 'M5 5h14a2 2 0 0 1 2 2v13H3V7a2 2 0 0 1 2-2Z M7 3v4 M17 3v4 M3 10h18 M7 14h2 M13 14h3 M7 17h2', users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M17 4a4 4 0 0 1 0 7 M22 21v-2a4 4 0 0 0-3-3.87', scissors: 'M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M6 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M8.1 7.1 21 20 M8.1 16.9 21 4 M12 12h.01', wallet: 'M21 8H5a2 2 0 0 1 0-4h14v4 M3 6v13a2 2 0 0 0 2 2h16V8 M21 12h-6v5h6 M17 14.5h.01', file: 'M14 2H5v20h14V7Z M14 2v6h5 M8 12h8 M8 16h6', checklist: 'M9 5h12 M9 12h12 M9 19h12 M2 4l2 2 3-3 M2 11l2 2 3-3 M2 18l2 2 3-3', settings: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M10 2h4l1 3 3 1 3-1 2 4-2 3v2l2 3-2 4-3-1-3 1-1 3h-4l-1-3-3-1-3 1-2-4 2-3v-2L1 9l2-4 3 1 3-1Z', help: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20 M9 9a3 3 0 1 1 5 2c-2 1-2 1-2 3 M12 17h.01', search: 'M21 21l-5-5 M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16', bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9 M10 21h4', plus: 'M12 5v14 M5 12h14', arrow: 'M5 12h14 M14 7l5 5-5 5', chevron: 'm9 5 7 7-7 7', left: 'm15 5-7 7 7 7', down: 'm6 9 6 6 6-6', clock: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20 M12 6v6l4 2', moon: 'M20.8 13A9 9 0 0 1 11 3.2 9 9 0 1 0 20.8 13Z', sun: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M12 2v2 M12 20v2 M2 12h2 M20 12h2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M4.9 19.1l1.4-1.4 M17.7 6.3l1.4-1.4', spark: 'm12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z M20 2v4 M18 4h4', shield: 'm12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6Z M8 12l3 3 5-6', leaf: 'M20 3C9 2 2 6 4 14c2 7 16 7 16-11Z M4 20 16 8', check: 'm5 12 4 4L19 6', download: 'M12 3v12 M7 10l5 5 5-5 M4 17v4h16v-4', upload: 'M12 16V4 M7 9l5-5 5 5 M4 17v4h16v-4', close: 'm6 6 12 12 M6 18 18 6', edit: 'm15 4 5 5 M4 16l-1 5 5-1L21 7a2.8 2.8 0 0 0-4-4Z', copy: 'M8 8h13v13H8z M16 8V3H3v13h5', info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20 M12 11v6 M12 7h.01', warning: 'M12 3 1 21h22Z M12 9v5 M12 17h.01', dots: 'M5 12h.01 M12 12h.01 M19 12h.01', menu: 'M3 6h18 M3 12h18 M3 18h18', coffee: 'M3 8h14v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z M17 8h2a3 3 0 0 1 0 6h-2 M7 2v3 M12 2v3', lock: 'M5 10h14v12H5z M8 10V6a4 4 0 0 1 8 0v4', link: 'm10 14 4-4 M8 16l-2 2a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0 M16 8l2-2a4 4 0 0 1 6 6l-5 5a4 4 0 0 1-6 0', image: 'M3 3h18v18H3Z m3 14 4-5 4 4 3-3 4 4 M8 7h.01', heart: 'M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z', print: 'M6 8V2h12v6 M6 17H3V8h18v9h-3 M6 13h12v9H6Z', undo: 'M3 3v6h6 M3 9a9 9 0 1 1 0 6' };
 /**
@@ -41,8 +42,6 @@ const initials = n => n.split(' ').filter(Boolean).map(x => x[0]).slice(0, 2).jo
  * uid — Gera um identificador único para um novo registro.
  */
 const uid = () => crypto.randomUUID();
-// Chave histórica do protótipo; não é usada para persistir os dados reais.
-const KEY = 'hanne-atelier-demo-v1';
 // Tema é preferência do dispositivo e não altera o snapshot financeiro.
 let theme = applyTheme(preferredTheme(globalThis.localStorage), document.documentElement, null);
 
@@ -341,7 +340,7 @@ function heading(title, subtitle, actions = '', date = false) {
 /**
  * stat — Renderiza um indicador numérico do painel.
  */
-function stat(title, value, detail, ic, spark = false, target = null) {
+function stat(title, value, detail, ic, target = null) {
     const targets = {
         'Recebido no período': { page: 'finance', tab: 'history', month: ui.month },
         'Resultado de caixa': { page: 'finance', tab: 'history', scope: 'cash', month: ui.month },
@@ -360,10 +359,6 @@ function stat(title, value, detail, ic, spark = false, target = null) {
     const content = `<div class="stat-head"><span class="stat-icon">${icon(ic)}</span>${title}</div><div class="stat-number">${value}</div><div class="stat-foot">${detail}</div>${target ? `<span class="stat-link-hint">Ver registros ${icon('arrow')}</span>` : ''}`;
     return target ? destinationLink(content, target, 'stat stat-link', `Ver registros: ${title}`) : `<article class="stat">${content}</article>`;
 }
-/**
- * conversationRow — Renderiza uma conversa com situação, prioridade e cliente.
- */
-function conversationRow(v) { const c = client(v.clientId); return `<button type="button" class="conversation-row ${v.category === 'Segurança' ? 'urgent' : ''}" data-action="open-conversation" data-id="${v.id}" aria-label="Abrir conversa com ${esc(c.name)}">${avatar(c)}<div class="grow"><div class="name">${esc(c.name)} ${pill(v.category, categoryColor(v.category))}</div><div class="preview">${esc(v.messages.at(-1)?.text)}</div></div><div style="text-align:right"><span class="time">${esc(v.time)}</span>${v.unread ? '<div class="unread-dot"></div>' : `<span class="arrow">${icon('chevron')}</span>`}</div></button>`; }
 /**
  * dayRibbon — Monta a faixa de datas navegáveis da agenda.
  */
@@ -496,18 +491,7 @@ function restoreEditing() {
  */
 function openForm(title, kind, body, save = 'Salvar', id = '', wide = false) { modal(title, `<form novalidate data-form="${kind}"><input type="hidden" name="id" value="${esc(id)}"><div class="dialog-body"><div class="form-grid">${body}</div></div><div class="form-error" id="form-error" role="alert"></div><div class="dialog-footer">${btn('Cancelar', 'close-modal')}<button class="btn primary" type="submit">${icon('check')}${save}</button></div></form>`, '', wide); }
 /** Mantém as restrições HTML sem balões do navegador, com erro associado e foco no campo. */
-function validateVisibleControls(form) {
-    if (!form?.querySelectorAll) return true;
-    const invalid = [...form.querySelectorAll('input, select, textarea')].find(el => el.willValidate && !el.closest('[hidden]') && !el.checkValidity());
-    if (!invalid) return true;
-    let error = form.querySelector('[role="alert"]');
-    if (!error) { error = document.createElement('div'); error.className = 'form-error'; error.setAttribute('role', 'alert'); form.prepend(error); }
-    if (!error.id) error.id = 'validation-error';
-    const label = invalid.getAttribute('aria-label') || invalid.labels?.[0]?.querySelector('span')?.textContent || invalid.name || 'Campo';
-    error.textContent = label + ': ' + (invalid.validity.valueMissing ? 'preencha este campo.' : invalid.validity.rangeUnderflow ? 'use um valor igual ou maior que ' + invalid.min + '.' : invalid.validity.rangeOverflow ? 'use um valor igual ou menor que ' + invalid.max + '.' : 'confira o formato e o valor informado.');
-    invalid.setAttribute('aria-invalid', 'true'); invalid.setAttribute('aria-describedby', error.id); invalid.focus();
-    return false;
-}
+
 /**
  * field — Monta o campo de formulário com rótulo e indicação opcional.
  */
@@ -2322,7 +2306,7 @@ document.addEventListener('click', e => {
         localStorage.setItem('hanne-data-view', selected);
     }
     catch { }
-    location.assign('/?dados=' + (selected === 'real' ? 'reais' : 'exemplo'));
+    location.search = '?dados=' + (selected === 'real' ? 'reais' : 'exemplo');
 });
 /**
  * Delegação de click: identifica a ação pelo atributo data-* do elemento.
@@ -2395,6 +2379,6 @@ document.addEventListener('click',async event=>{
  }
 });
 
-document.addEventListener('click',event=>{if(!event.target.closest('[data-salon-logout]'))return;event.preventDefault();confirmLeaving('Deseja sair da conta? Confira se as alterações foram salvas.',async()=>{try{const r=await fetch('/api/auth/logout',{method:'POST'});if(!r.ok)throw Error();location.assign('/login');}catch{toast('Não foi possível sair. Tente novamente.');}});});
+document.addEventListener('click',event=>{if(!event.target.closest('[data-salon-logout]'))return;event.preventDefault();confirmLeaving('Deseja sair da conta? Confira se as alterações foram salvas.',async()=>{try{const r=await fetch('/api/auth/logout',{method:'POST'});if(!r.ok)throw Error();location.replace('/login');}catch{toast('Não foi possível sair. Tente novamente.');}});});
 
 document.addEventListener('input',event=>{if(event.target.id!=='deletion-search')return;const query=event.target.value.toLocaleLowerCase('pt-BR');document.querySelectorAll('[data-delete-row]').forEach(row=>{row.hidden=!row.textContent.toLocaleLowerCase('pt-BR').includes(query);});});

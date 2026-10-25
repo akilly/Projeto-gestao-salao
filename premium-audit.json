@@ -3,7 +3,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 51,
+      "line": 50,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -12,7 +12,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 297,
+      "line": 296,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -21,7 +21,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 320,
+      "line": 319,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -30,7 +30,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 370,
+      "line": 365,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -39,7 +39,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 382,
+      "line": 377,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -48,7 +48,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 392,
+      "line": 387,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -57,7 +57,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 392,
+      "line": 387,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -66,7 +66,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 396,
+      "line": 391,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -75,7 +75,16 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 396,
+      "line": 391,
+      "message": "Enabled literal button has no detectable action or submit behavior.",
+      "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
+      "ruleId": "affordance.actionless-button",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "public/app.js",
+      "line": 408,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -93,7 +102,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 418,
+      "line": 421,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -102,7 +111,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 426,
+      "line": 431,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -111,7 +120,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 436,
+      "line": 431,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -120,7 +129,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 436,
+      "line": 539,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -129,7 +138,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 555,
+      "line": 724,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -138,7 +147,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 740,
+      "line": 1514,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -147,7 +156,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 1530,
+      "line": 1514,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -156,7 +165,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 1530,
+      "line": 1546,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -165,7 +174,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 1562,
+      "line": 1567,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -174,16 +183,7 @@
     {
       "category": "violation",
       "file": "public/app.js",
-      "line": 1583,
-      "message": "Enabled literal button has no detectable action or submit behavior.",
-      "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
-      "ruleId": "affordance.actionless-button",
-      "severity": "error"
-    },
-    {
-      "category": "violation",
-      "file": "public/app.js",
-      "line": 1835,
+      "line": 1819,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -191,7 +191,7 @@
     }
   ],
   "mode": "strict",
-  "projectRoot": "/workspace/sites/hanne-atelier",
+  "projectRoot": "/workspace/Projeto-gestao-salao",
   "schemaVersion": 1,
   "summary": {
     "errors": 21,

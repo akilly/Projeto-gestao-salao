@@ -1,15 +1,16 @@
 # Mapa dos arquivos
 
-Inventário dos arquivos versionados. Os módulos de negócio estão comentados no próprio código; o catálogo detalhado de funções está em REFERENCIA_FUNCOES.md. O produto atual usa public/app.js, e não os componentes React do starter.
+Inventário dos arquivos versionados. Os módulos de negócio estão comentados no próprio código; o catálogo detalhado de funções está em REFERENCIA_FUNCOES.md. O produto atual usa os módulos em `public` sobre o runtime Vinext.
 
 | Arquivo | Papel |
 | --- | --- |
 | `.openai/hosting.json` | Manifesto da hospedagem |
 | `README.md` | Documentação |
+| `app/api/auth/[...path]/route.ts` | Rota da conta titular e das sessões |
 | `app/api/state/route.ts` | Rota, autenticação ou estrutura do servidor |
-| `app/chatgpt-auth.ts` | Rota, autenticação ou estrutura do servidor |
-| `app/globals.css` | Rota, autenticação ou estrutura do servidor |
+| `app/api/whatsapp/[...path]/route.ts` | Rota autenticada do canal WhatsApp |
 | `app/layout.tsx` | Rota, autenticação ou estrutura do servidor |
+| `app/login/route.ts` | HTML da entrada e do cadastro inicial |
 | `app/route.ts` | Rota, autenticação ou estrutura do servidor |
 | `build/connector-preview-plugin.mjs` | Infraestrutura oficial de compilação e Worker |
 | `build/connector-preview-worker.mjs` | Infraestrutura oficial de compilação e Worker |
@@ -17,101 +18,31 @@ Inventário dos arquivos versionados. Os módulos de negócio estão comentados 
 | `build/sites-vite-plugin.ts` | Infraestrutura oficial de compilação e Worker |
 | `build/sites-worker.ts` | Infraestrutura oficial de compilação e Worker |
 | `cloudflare-env.d.ts` | Configuração do projeto |
-| `components.json` | Configuração do projeto |
-| `components/connector-error.tsx` | Suporte de interface herdado do starter |
-| `components/ui/accordion.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/alert-dialog.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/alert.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/aspect-ratio.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/attachment.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/avatar.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/badge.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/breadcrumb.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/bubble.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/button-group.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/button.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/calendar.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/card.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/carousel.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/chart.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/checkbox.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/collapsible.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/combobox.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/command.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/context-menu.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/dialog.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/direction.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/drawer.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/dropdown-menu.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/empty.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/field.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/form.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/hover-card.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/input-group.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/input-otp.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/input.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/item.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/kbd.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/label.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/marker.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/menubar.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/message-scroller.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/message.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/native-select.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/navigation-menu.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/pagination.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/popover.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/progress.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/radio-group.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/resizable.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/scroll-area.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/select.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/separator.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/sheet.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/sidebar.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/skeleton.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/slider.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/sonner.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/spinner.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/switch.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/table.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/tabs.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/textarea.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/toggle-group.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/toggle.tsx` | Componente herdado do starter, fora da interface atual |
-| `components/ui/tooltip.tsx` | Componente herdado do starter, fora da interface atual |
-| `db/index.ts` | Esquema ou adaptador D1 |
 | `db/schema.ts` | Esquema ou adaptador D1 |
 | `drizzle.config.ts` | Configuração do projeto |
 | `drizzle/0000_big_elektra.sql` | Histórico gerado de migração aplicado e preservado |
 | `drizzle/meta/0000_snapshot.json` | Histórico gerado de migração aplicado e preservado |
 | `drizzle/meta/_journal.json` | Histórico gerado de migração aplicado e preservado |
 | `eslint.config.mjs` | Configuração do projeto |
-| `examples/d1/app/api/notes/route.ts` | Exemplo de referência do starter, fora das rotas de negócio |
-| `examples/d1/db/schema.ts` | Exemplo de referência do starter, fora das rotas de negócio |
-| `hooks/use-mobile.ts` | Suporte de interface herdado do starter |
 | `lib/connector-context.ts` | Infraestrutura de conectores do starter, sem conexão de negócio ativa |
 | `lib/connector-contract.mts` | Infraestrutura de conectores do starter, sem conexão de negócio ativa |
 | `lib/connector-errors.mts` | Infraestrutura de conectores do starter, sem conexão de negócio ativa |
 | `lib/connector-preview.d.ts` | Infraestrutura de conectores do starter, sem conexão de negócio ativa |
-| `lib/connectors.ts` | Infraestrutura de conectores do starter, sem conexão de negócio ativa |
 | `lib/state-handler.mjs` | API de estado e persistência autenticada |
-| `lib/utils.ts` | Utilitário compartilhado do starter |
+| `lib/salon-auth.mjs` | Cadastro, credenciais, sessões e autorização |
 | `next.config.ts` | Configuração do projeto |
 | `package.json` | Dependências e configuração do gerenciador |
 | `pnpm-lock.yaml` | Dependências e configuração do gerenciador |
 | `pnpm-workspace.yaml` | Dependências e configuração do gerenciador |
-| `postcss.config.mjs` | Configuração do projeto |
 | `public/app.js` | Interface, utilitário ou recurso estático da aplicação |
+| `public/form-validation.js` | Validação acessível compartilhada pelos formulários |
 | `public/core.js` | Interface, utilitário ou recurso estático da aplicação |
 | `public/domain.js` | Interface, utilitário ou recurso estático da aplicação |
 | `public/examples.js` | Interface, utilitário ou recurso estático da aplicação |
 | `public/favicon.svg` | Interface, utilitário ou recurso estático da aplicação |
-| `public/file.svg` | Interface, utilitário ou recurso estático da aplicação |
-| `public/globe.svg` | Interface, utilitário ou recurso estático da aplicação |
 | `public/style.css` | Interface, utilitário ou recurso estático da aplicação |
-| `public/window.svg` | Interface, utilitário ou recurso estático da aplicação |
 | `scripts/build-verified.sh` | Instalação, execução e suporte de ambiente do starter |
+| `scripts/create-local-test-user.mjs` | Criação explícita de credencial somente no D1 local |
 | `scripts/connector-preview/connector-preview-session.mjs` | Instalação, execução e suporte de ambiente do starter |
 | `scripts/connector-preview/host-binding.mjs` | Instalação, execução e suporte de ambiente do starter |
 | `scripts/connector-preview/protocol.mjs` | Instalação, execução e suporte de ambiente do starter |
