@@ -724,3 +724,126 @@ textarea { resize: none; min-height: 115px; }
 
 [data-delete-row][hidden]{display:none!important}
 .login [hidden]{display:none!important}
+
+/* ==========================================================================
+   Refinamento v14 — legibilidade, toque e hierarquia.
+   Mantém a identidade (ameixa, cereja, vidro) e corrige tamanhos de texto
+   abaixo do legível, a barra inferior translúcida e a densidade no celular.
+   ========================================================================== */
+:root { --tap: 44px; --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+
+/* Tipografia mínima: botões, rótulos e textos de apoio deixam de usar 8–11px. */
+.btn { font-size: 13px; }
+.btn.sm { font-size: 12.5px; min-height: 38px; }
+.pill { font-size: 11.5px; }
+.eyebrow, .page-kicker { font-size: 11px; }
+.card-head .sub, .table-sub, .attention-card-detail, .attention-card-foot, .stat-link-hint { font-size: 12.5px; }
+.small { font-size: 13px; }
+.tiny { font-size: 12px; }
+.page-guide summary { font-size: 13px; }
+.field > span { font-size: 13px; font-weight: 600; }
+.demo-label { font-size: 12px; }
+
+/* Campo obrigatório visível antes do erro. */
+.field:has(> input:required:not([type=checkbox]):not([type=radio]), > select:required, > textarea:required) > span::after { content: ' *'; color: var(--red); font-weight: 700; }
+
+/* Foco por teclado consistente em todos os controles. */
+:where(button, a, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; box-shadow: var(--focus-ring); }
+
+/* Alternância de base no menu lateral, agora um botão. */
+button.demo-label { background: none; border: 0; padding: 6px 0; cursor: pointer; text-align: left; font: inherit; font-size: 12px; color: var(--muted); }
+button.demo-label:hover { color: var(--accent); }
+
+/* Contador do sino. */
+.bell-btn { position: relative; }
+.bell-btn.notify::after { display: none; }
+.bell-count { position: absolute; top: 2px; right: 1px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--red); color: #fff; font: 700 11px/18px 'DM Sans', sans-serif; text-align: center; box-shadow: 0 0 0 2px var(--surface-solid); pointer-events: none; }
+
+/* Seletor de data da agenda sem zoom automático do iOS. */
+.agenda-date-input { font-size: 14px; min-height: 38px; }
+
+@media (max-width: 760px) {
+  body { font-size: 15px; }
+  .btn { font-size: 14px; min-height: var(--tap); }
+  .btn.sm { font-size: 13px; min-height: 40px; }
+  .btn.text { min-height: 40px; }
+  .card-head .sub, .table-sub, .attention-card-detail, .attention-card-foot { font-size: 13px; }
+  .field > span { font-size: 13.5px; }
+  .agenda-date-input { font-size: 16px; }
+
+  /* Barra inferior opaca: o conteúdo não aparece mais por trás dos ícones. */
+  .mobile-bottom-nav { background: var(--surface-solid); border-top: 1px solid var(--line); box-shadow: 0 -8px 24px #2a1d3314; padding: 6px 6px max(6px, env(safe-area-inset-bottom)); gap: 2px; }
+  .mobile-bottom-nav button { position: relative; flex: 1 1 0; min-width: 0; min-height: 52px; font-size: 11.5px; font-weight: 600; gap: 4px; }
+  .mobile-bottom-nav .icon { width: 22px; height: 22px; }
+  .mobile-bottom-nav .nav-count { position: absolute; top: 4px; left: calc(50% + 6px); margin: 0; min-width: 18px; padding: 0 5px; border-radius: 999px; font: 700 10.5px/18px 'DM Sans', sans-serif; background: var(--red); color: #fff; }
+  .mobile-bottom-nav .nav-count[hidden] { display: none; }
+  .main { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+
+  /* Boas-vindas compacta: as ações e o número do dia ficam visíveis sem rolar. */
+  .atelier-welcome { padding: 22px 20px 20px; }
+  .welcome-copy h1 { font-size: clamp(27px, 7.4vw, 34px); margin: 14px 0 8px; }
+  .welcome-copy>p { font-size: 14px; line-height: 1.55; }
+  .welcome-date { font-size: 11px; }
+  .welcome-routine { display: none; }
+  .welcome-actions { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); margin-top: 18px; }
+  .welcome-actions .btn { justify-content: center; font-size: 14px; min-height: 46px; min-width: 0; padding: 10px 12px; white-space: normal; text-align: center; }
+  .welcome-day { margin-top: 16px; }
+  .welcome-day-number small, .welcome-day-bottom { font-size: 12px; }
+  .wa-dashboard-link { width: 100%; max-width: none; justify-content: flex-start; font-size: 14px; margin: 12px 0 16px; }
+  .wa-dashboard-link > .icon:last-child { margin-left: auto; }
+
+  /* Cabeçalho das telas mais enxuto; o conteúdo principal sobe. */
+  .page-heading h1 { font-size: 28px; }
+  .page-heading p { font-size: 14px; }
+  .page-heading .row.wrap { gap: 8px; }
+  .page-guide { margin-bottom: 16px; }
+  .dialog-footer .btn { flex: 1 1 auto; justify-content: center; }
+
+  /* Cabeçalho: título e ação principal primeiro; ações secundárias em linha compacta. */
+  .page-heading { margin-bottom: 14px; }
+  .page-heading .page-kicker, .page-heading > div > p { display: none; }
+  .page-heading h1 { margin: 0 0 12px; }
+  .page-heading .row.wrap { display: flex; flex-wrap: wrap; }
+  .page-heading .row.wrap .btn.primary { order: -1; flex: 1 1 100%; justify-content: center; }
+  .page-heading .row.wrap .btn.secondary { flex: 1 1 0; justify-content: center; min-width: 0; padding-inline: 10px; }
+  .page-heading .row.wrap .btn.text { flex: 0 0 auto; margin-left: auto; font-size: 13px; color: var(--muted); }
+  .page-guide summary { padding: 10px 14px; }
+
+  /* Indicadores da agenda em uma faixa baixa. */
+  .agenda-overview { gap: 8px; margin-bottom: 14px; }
+  .agenda-overview>div, .agenda-overview>.agenda-summary-link { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 12px; }
+  .agenda-overview>div>.icon, .agenda-overview>.agenda-summary-link>.icon { width: 16px; height: 16px; margin: 0; }
+  .agenda-overview>div>span, .agenda-overview>.agenda-summary-link>span { font-size: 12px; }
+  .agenda-overview strong { font-size: 20px; margin-top: 2px; }
+  .agenda-overview strong small { display: none; }
+
+  /* Linha da agenda: horário, cartão com nome e serviço em largura total, ação logo abaixo. */
+  .schedule-row { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px 10px; align-items: stretch; }
+  .schedule-row .schedule-marker { display: none; }
+  .schedule-row .schedule-time { width: auto; font-size: 13px; font-weight: 650; }
+  .schedule-row .schedule-body { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; min-width: 0; padding: 12px 14px; }
+  .schedule-row .schedule-body strong, .agenda-timeline .schedule-body strong { font-size: 15px; }
+  .schedule-row .schedule-body p, .agenda-timeline .schedule-body p { font-size: 13px; }
+  .schedule-row .schedule-body .pill { font-size: 11.5px; flex-shrink: 0; }
+  .schedule-row .schedule-finish { grid-column: 2; justify-self: stretch; justify-content: center; min-height: 42px; background: var(--accent-soft); border-radius: 12px; font-size: 14px; }
+}
+@media (max-width: 360px) {
+  .welcome-actions { grid-template-columns: 1fr; }
+  .mobile-bottom-nav button { font-size: 10.5px; }
+}
+@media (prefers-reduced-transparency: reduce) { .mobile-bottom-nav { backdrop-filter: none; } }
+
+/* Piso de legibilidade no celular. O prefixo #main/.sidebar vence regras antigas mais específicas
+   sem tocar nos tamanhos de títulos e números de destaque. */
+@media (max-width: 760px) {
+  #main :is(.stat-foot, .table-sub, .small, .tiny, .period-toolbar label, .segmented button, .tabs button, .records-pagination span, .detail-metric-link span, .detail-metric-link small, .combination-link strong, .setup-step, .audit-row time, .schedule-time small, .calendar-toolbar strong),
+  #main span.grow small, #main .row.gap8 > span, .sidebar .nav button > span { font-size: 12.5px; }
+  #main .eyebrow { font-size: 11.5px; }
+  #main .stat-foot { line-height: 1.45; }
+  #main td::before { font-size: 12px; }
+  .day-ribbon button span, #main .day-ribbon span { font-size: 11.5px; }
+  #main .avatar { font-size: 11px; }
+  #main .setting-row p, #main .setup-steps p { font-size: 13px; }
+  dialog .finish-progress span { font-size: 12px; }
+  dialog .form-error, dialog #form-error { font-size: 14px; }
+}
