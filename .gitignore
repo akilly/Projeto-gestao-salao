@@ -60,3 +60,6 @@ next-env.d.ts
 
 # Incremental compiler cache
 *.tsbuildinfo
+
+# Segredos locais do Worker (wrangler/vite)
+.dev.vars*

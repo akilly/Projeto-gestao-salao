@@ -1509,6 +1509,46 @@ document.addEventListener('submit', e => {
     if (!validateVisibleControls(form)) { e.preventDefault(); e.stopImmediatePropagation(); }
 }, true);
 /**
+ * baseIsEmpty — Indica que a base real ainda não tem registros de negócio; só então uma cópia pode ser restaurada.
+ */
+const baseIsEmpty = () => !state.settings.cutoff && ['clients', 'appointments', 'records', 'bills', 'payments', 'products', 'movements', 'expenses'].every(k => !state[k].length);
+// Restauração de cópia JSON: usada para trazer os dados de outra hospedagem para uma base real ainda vazia.
+document.addEventListener('click', e => {
+    if (!e.target.closest?.('[data-action="v14-restore"]'))
+        return;
+    if (dataset !== 'real' || !baseIsEmpty()) { toast('A restauração só é permitida em uma base real ainda vazia.'); return; }
+    openForm('Restaurar cópia JSON', 'v14-restore', `<div class="notice full">Use o arquivo gerado por “Cópia completa JSON” na versão anterior do sistema. Todos os registros do arquivo serão gravados nesta conta, que ainda está vazia.</div><label class="field full"><span>Arquivo da cópia (.json)</span><input type="file" name="file" accept="application/json,.json" required></label><label class="row full small"><input type="checkbox" name="confirm" required>Confirmo que este arquivo contém os dados reais do ateliê.</label>`, 'Restaurar registros');
+});
+document.addEventListener('submit', async e => {
+    const form = e.target;
+    if (form.dataset?.form !== 'v14-restore')
+        return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const error = form.querySelector('#form-error');
+    try {
+        const file = form.elements.file.files[0];
+        if (!file || file.size > 3000000)
+            throw Error('Escolha o arquivo .json da cópia, com até 3 MB.');
+        let next;
+        try { next = JSON.parse(await file.text()); }
+        catch { throw Error('O arquivo não é uma cópia JSON válida.'); }
+        if (next?.datasetKind === 'example')
+            throw Error('Este arquivo é da demonstração e não pode entrar nos dados reais.');
+        if (!baseIsEmpty())
+            throw Error('A base já possui registros. A restauração foi cancelada para não sobrescrevê-los.');
+        validateState(next);
+        next.audit = Array.isArray(next.audit) ? next.audit : [];
+        state = next;
+        audit('Cópia JSON restaurada', '', file.name.slice(0, 100));
+        if (queueSave('Registros restaurados da cópia.'))
+            closeModal(true);
+    }
+    catch (err) {
+        error.textContent = err.message;
+    }
+}, true);
+/**
  * stockNumber — Formata quantidade de estoque com até três casas decimais.
  */
 const stockNumber = n => Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
@@ -1616,7 +1656,7 @@ function setupPage() { const cutoff = state.settings.cutoff, steps = [['Data de 
 /**
  * settingsPage — Renderiza preferências, expediente e opções manuais de dados e auditoria.
  */
-function settingsPage() { return `${heading('Configurações', 'Aparência, horários de trabalho e preferências do ateliê.')}<div class="toolbar">${btn('Preparar operação', 'nav', 'arrow', 'primary', 'data-page="setup"')}${btn('Exportar dados', 'export-modal', 'download', 'secondary')}${btn('Cópia completa JSON', 'backup', 'download', 'secondary')}${btn(dataset === 'example' ? 'Voltar aos dados reais' : 'Ver demonstração', 'v3-dataset', 'spark', 'text', `data-dataset="${dataset === 'example' ? 'real' : 'example'}"`)}</div><section class="card appearance-card"><div><span class="eyebrow">Deixe confortável para você</span><h2>Aparência</h2><p>Escolha entre claro e escuro suave. Sua escolha fica salva neste dispositivo.</p></div>${themeControl()}</section><div class="settings-grid"><section class="card settings-card"><h2>Sua rotina</h2><form novalidate data-form="settings"><div class="form-grid">${field('Como prefere ser chamada?', 'name', state.settings.name, 'text', 'required maxlength="50"', true)}${field('Início do expediente', 'open', state.settings.open, 'time', 'required')}${field('Fim do expediente', 'close', state.settings.close, 'time', 'required')}${field('Prazo de resposta de referência (min)', 'responseMinutes', state.settings.responseMinutes, 'number', 'required min="5" max="1440"', true)}<div class="full"><span class="small">Dias de folga</span><div class="weekday-checks">${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d, i) => `<label><input type="checkbox" name="closedDays" value="${i}" ${state.settings.closedDays.includes(i) ? 'checked' : ''}>${d}</label>`).join('')}</div></div><div id="settings-error" role="alert" class="full small" style="color:var(--red)"></div><div class="full"><button type="submit" class="btn primary">Salvar rotina</button></div></div></form></section><section class="card settings-card"><h2>Conexões e acesso</h2><a class="btn secondary" href="/login" data-salon-logout>Sair da conta</a><div class="setting-row"><div><strong>Dados persistentes</strong><p>Registros vinculados à conta autenticada, com conferência de versão para alterações simultâneas.</p></div>${pill(syncStatus === 'saved' ? 'Sincronizado' : 'Conferir', syncStatus === 'saved' ? 'green' : 'orange')}</div><div class="setting-row"><div><strong>WhatsApp Business</strong><p>O conector Baileys permite vincular por QR Code e receber e enviar textos, imagens e áudios. Requer um servidor Node sempre ligado. Confira a conexão em Atendimentos → WhatsApp. Notas internas continuam separadas.</p></div>${btn('Configurar', 'integrations', 'link', 'secondary sm')}</div><div class="setting-row"><div><strong>Inteligência artificial</strong><p>Classificação automática, resumos e transcrição ainda dependem de avaliação técnica e de custos.</p></div>${pill('Pendente', 'gray')}</div><div class="setting-row"><div><strong>Acesso individual</strong><p>Conta única da Hanne com e-mail e senha. A conta é criada uma única vez com o código de configuração da hospedagem, que também permite redefinir a senha. As sessões expiram em 12 horas.</p></div>${icon('shield')}</div></section><section class="card settings-card full"><h2>Histórico de ações confirmadas</h2><p class="small muted">As alterações salvas ficam registradas no servidor. Última sincronização: ${lastSavedAt ? new Date(lastSavedAt).toLocaleString('pt-BR') : 'nenhuma alteração ainda'}.</p>${state.audit.slice(0, 8).map(a => `<div class="audit-row">${esc(a.action)}<time>${new Date(a.at).toLocaleString('pt-BR')} · ${esc(a.by)}</time></div>`).join('') || empty('O histórico começa com sua primeira alteração.')}${state.audit.length ? btn('Histórico completo', 'audit', 'arrow', 'text') : ''}</section></div>`; }
+function settingsPage() { return `${heading('Configurações', 'Aparência, horários de trabalho e preferências do ateliê.')}<div class="toolbar">${btn('Preparar operação', 'nav', 'arrow', 'primary', 'data-page="setup"')}${btn('Exportar dados', 'export-modal', 'download', 'secondary')}${btn('Cópia completa JSON', 'backup', 'download', 'secondary')}${dataset === 'real' && baseIsEmpty() ? btn('Restaurar cópia JSON', 'v14-restore', 'upload', 'secondary') : ''}${btn(dataset === 'example' ? 'Voltar aos dados reais' : 'Ver demonstração', 'v3-dataset', 'spark', 'text', `data-dataset="${dataset === 'example' ? 'real' : 'example'}"`)}</div><section class="card appearance-card"><div><span class="eyebrow">Deixe confortável para você</span><h2>Aparência</h2><p>Escolha entre claro e escuro suave. Sua escolha fica salva neste dispositivo.</p></div>${themeControl()}</section><div class="settings-grid"><section class="card settings-card"><h2>Sua rotina</h2><form novalidate data-form="settings"><div class="form-grid">${field('Como prefere ser chamada?', 'name', state.settings.name, 'text', 'required maxlength="50"', true)}${field('Início do expediente', 'open', state.settings.open, 'time', 'required')}${field('Fim do expediente', 'close', state.settings.close, 'time', 'required')}${field('Prazo de resposta de referência (min)', 'responseMinutes', state.settings.responseMinutes, 'number', 'required min="5" max="1440"', true)}<div class="full"><span class="small">Dias de folga</span><div class="weekday-checks">${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d, i) => `<label><input type="checkbox" name="closedDays" value="${i}" ${state.settings.closedDays.includes(i) ? 'checked' : ''}>${d}</label>`).join('')}</div></div><div id="settings-error" role="alert" class="full small" style="color:var(--red)"></div><div class="full"><button type="submit" class="btn primary">Salvar rotina</button></div></div></form></section><section class="card settings-card"><h2>Conexões e acesso</h2><a class="btn secondary" href="/login" data-salon-logout>Sair da conta</a><div class="setting-row"><div><strong>Dados persistentes</strong><p>Registros vinculados à conta autenticada, com conferência de versão para alterações simultâneas.</p></div>${pill(syncStatus === 'saved' ? 'Sincronizado' : 'Conferir', syncStatus === 'saved' ? 'green' : 'orange')}</div><div class="setting-row"><div><strong>WhatsApp Business</strong><p>O conector Baileys permite vincular por QR Code e receber e enviar textos, imagens e áudios. Requer um servidor Node sempre ligado. Confira a conexão em Atendimentos → WhatsApp. Notas internas continuam separadas.</p></div>${btn('Configurar', 'integrations', 'link', 'secondary sm')}</div><div class="setting-row"><div><strong>Inteligência artificial</strong><p>Classificação automática, resumos e transcrição ainda dependem de avaliação técnica e de custos.</p></div>${pill('Pendente', 'gray')}</div><div class="setting-row"><div><strong>Acesso individual</strong><p>Conta única da Hanne com e-mail e senha. A conta é criada uma única vez com o código de configuração da hospedagem, que também permite redefinir a senha. As sessões expiram em 12 horas.</p></div>${icon('shield')}</div></section><section class="card settings-card full"><h2>Histórico de ações confirmadas</h2><p class="small muted">As alterações salvas ficam registradas no servidor. Última sincronização: ${lastSavedAt ? new Date(lastSavedAt).toLocaleString('pt-BR') : 'nenhuma alteração ainda'}.</p>${state.audit.slice(0, 8).map(a => `<div class="audit-row">${esc(a.action)}<time>${new Date(a.at).toLocaleString('pt-BR')} · ${esc(a.by)}</time></div>`).join('') || empty('O histórico começa com sua primeira alteração.')}${state.audit.length ? btn('Histórico completo', 'audit', 'arrow', 'text') : ''}</section></div>`; }
 /**
  * help — Exibe orientação resumida e limitações da operação atual.
  */
