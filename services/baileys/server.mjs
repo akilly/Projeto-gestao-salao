@@ -9,8 +9,11 @@ import makeWASocket, { useMultiFileAuthState as loadAuthState, DisconnectReason,
 import QRCode from 'qrcode';
 import pino from 'pino';
 import { openStore } from './store.mjs';
-const key=process.env.BRIDGE_KEY||'',origin=new URL(process.env.SITE_ORIGIN||'https://hanne-atelier.jollysmile16.chatgpt.site').origin;
+const key=process.env.BRIDGE_KEY||'',site=process.env.SITE_ORIGIN||'';
 if(!/^[\w-]{32,160}$/.test(key))throw Error('Configure BRIDGE_KEY no arquivo .env.');
+// O endereço do ateliê é obrigatório: eventos só seguem para o site configurado pela titular.
+if(!/^https:\/\/[^/]+$/.test(site.replace(/\/$/,'')))throw Error('Configure SITE_ORIGIN com o endereço HTTPS do ateliê, por exemplo https://hanne-atelier.SEU-USUARIO.workers.dev.');
+const origin=new URL(site).origin;
 process.umask(0o077);
 const dir=resolve(process.env.DATA_DIR||'./data');await mkdir(join(dir,'media'),{recursive:true,mode:0o700});
 const store=openStore(join(dir,'journal.sqlite')),logger=pino({level:'silent'});

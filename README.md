@@ -1,6 +1,6 @@
 # Hanne · Gestão do ateliê
 
-Aplicação em português para uma profissional. Interface orientada ao celular, API Vinext/Cloudflare e banco D1 provisionado pelo Sites. A audiência original do Site é preservada. Nenhum serviço externo pago é usado por esta atualização.
+Aplicação em português para uma profissional. Interface orientada ao celular, API Vinext em Cloudflare Workers e banco D1. Para publicar, siga o [DEPLOY.md](DEPLOY.md). Nenhum serviço externo pago é usado por esta atualização.
 
 ## Operação
 
@@ -8,7 +8,7 @@ A conta autenticada começa com clientes, histórico, estoque e financeiro vazio
 
 ### Acesso e usuário de teste
 
-No primeiro acesso publicado, escolha **Cadastrar usuário titular**, confirme a identidade da titular pela hospedagem e informe e-mail e senha com pelo menos 12 caracteres. O sistema possui uma única conta titular; não há cadastro público.
+No primeiro acesso publicado, a tela de login pede o **código de configuração** (segredo `SETUP_TOKEN` do Worker), o e-mail e uma senha com pelo menos 12 caracteres. O mesmo código permite redefinir a senha em “Esqueci minha senha”. O sistema possui uma única conta titular; não há cadastro público, e nenhum cabeçalho enviado pelo navegador concede acesso.
 
 Para desenvolvimento local, execute `npm run user:test:create` depois do build. A conta criada somente no D1 local é `teste@hanne.local`, com senha `HanneTeste#2026`. O comando pode receber `TEST_USER_EMAIL` e `TEST_USER_PASSWORD` para usar outras credenciais locais. Nunca use essa conta ou essa senha na publicação.
 
@@ -28,7 +28,7 @@ As tabelas e metadados de migração estão em db/ e drizzle/. Não alterar migr
 
 ## Validação
 
-`node --test tests/*.test.mjs services/baileys/*.test.mjs` testa regras de agenda, CSV, fechamento, estoque, sinais, cartão, fluxo de caixa, autenticação, isolamento de contas, conector e conflitos de gravação. A persistência é exercitada com SQLite real em memória, usando o SQL da migração. O build é realizado pelo helper oficial Sites. A revisão visual usa navegador local com dados fictícios isolados. A suíte atual tem 106 testes.
+`npm test` testa regras de agenda, CSV, fechamento, estoque, sinais, cartão, fluxo de caixa, autenticação, isolamento de contas, conector e conflitos de gravação. A persistência é exercitada com SQLite real em memória, usando o SQL da migração. O build é realizado pelo helper oficial Sites. A revisão visual usa navegador local com dados fictícios isolados. A suíte atual tem 106 testes.
 
 ## Pendências conhecidas
 
@@ -83,8 +83,18 @@ Conector Node Baileys em `services/baileys`, com instalação e ativação pende
 
 ### Implantação
 
-O projeto é um Worker Vinext com banco D1. Não é um site estático: GitHub Pages não executa as APIs, autenticação ou o banco. A publicação suportada utiliza o pipeline Sites e `.openai/hosting.json`, já vinculado ao projeto. O build copia `drizzle` para aplicar migrações na hospedagem. Não copie dados de produção, `.env`, sessões ou chaves para o GitHub. Para hospedagem fora do Sites, adapte também a identidade de bootstrap/recuperação da titular, os bindings e o processo de migração antes de expor o sistema.
+O projeto é um Worker Vinext com banco D1 e é publicado na Cloudflare pelo script `npm run deploy:cloudflare`; o passo a passo completo, com os segredos `SETUP_TOKEN` e `WHATSAPP_ENCRYPTION_KEY`, está em [DEPLOY.md](DEPLOY.md). Não é um site estático: GitHub Pages não executa as APIs, a autenticação ou o banco. Não copie dados de produção, `.env`, `.dev.vars`, sessões ou chaves para o GitHub.
 
-Configure WHATSAPP_ENCRYPTION_KEY como segredo do Worker. Opcionalmente prepare BAILEYS_BRIDGE_URL e BAILEYS_BRIDGE_KEY para que a Hanne só clique em Gerar QR Code. Endereço/chave também podem ser cadastrados uma vez na interface. Leia `services/baileys/README.md` para o serviço separado. Nenhum pareamento real é feito automaticamente durante build ou deploy.
+Para trazer os dados da hospedagem anterior, exporte “Cópia completa JSON” lá e use Configurações → Restaurar cópia JSON na base nova, antes de preparar a operação.
 
-Valide com `node --test tests/*.test.mjs`, `node node_modules/typescript/bin/tsc --noEmit` e o helper de build Sites. Instale as dependências pelo helper do ambiente ou pelo gerenciador pnpm definido no package.json. O conector possui testes separados.
+Valide com `npm test`, `node node_modules/typescript/bin/tsc --noEmit` e `npm run deploy:cloudflare -- --dry-run`. O conector possui testes separados.
+
+
+## Versão 14 — correções, celular e Cloudflare
+
+- Segurança: cadastro e recuperação exigem o código `SETUP_TOKEN`; cabeçalhos da plataforma anterior não concedem mais acesso; rota de webhook do WhatsApp verificada pelo caminho completo.
+- O app abre nos dados reais por padrão; a demonstração fica em Configurações e no menu.
+- Contas vencidas, cobranças atrasadas e repasses de cartão em atraso aparecem em “Para resolver” e no sino, com contador.
+- Fechamento de atendimento indica o campo obrigatório que falta; campos obrigatórios marcados com asterisco; primeiro repasse do cartão sugerido em D+1 (débito) ou D+30 (crédito).
+- Celular: textos e botões legíveis, barra inferior opaca com atalho de Conversas, agenda visível na primeira tela.
+- Restauração de cópia JSON em base vazia, para migrar de hospedagem.
