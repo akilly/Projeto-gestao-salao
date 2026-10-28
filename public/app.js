@@ -6,6 +6,7 @@ import { deletionPlan, allCollections } from './deletion.js';
  */
 import { destinationHref, parseDestination, validCalendarDate, recordPage } from './navigation.js';
 import { createBooking, validateClientContact, matchingClient, validateBookingSlot } from './booking.js';
+import { waURL, waPhone, waMessages, whenText } from './wa-link.js';
 import { detailViews } from './destinations-ui.js';
 import { createWhatsAppUI } from './whatsapp.js';
 import { attendanceSummary, previousConsumption, ensureSpaceExpense, rollMonth } from './routine.js?v=records-1';
@@ -68,7 +69,9 @@ let state = blankState(), revision = 0, confirmedState = structuredClone(state),
 const ui = { month: localDate().slice(0, 7), financeTab: 'bills', inventoryTab: 'products', page: 'dashboard', dashTab: 'all', date: localDate(), agendaView: 'day', clientFilter: 'all', clientQuery: '', clientView: 'table', convFilter: 'all', conversationId: 'v1', threadOpen: false, quoteFilter: 'all', taskFilter: 'open', financePeriod: 'month', profileTab: 'overview', recordsMode: 'day', recordsDate: localDate(), recordsService: '', recordsSet: '', recordsClient: '', recordsPage: 1, financeScope: '', financeDate: '', financePageIndex: 1, inventoryPageIndex: 1, inventoryScope: '', agendaStatus: '', recordsMonth: localDate().slice(0, 7), serviceTab: 'records', mobile: false };
 // WhatsApp compartilha campos, diálogos e feedback, mas não usa a fila financeira.
 let whatsappPending = 0;
-ui.inboxView = dataset === 'real' ? 'whatsapp' : 'notes';
+// Integração por API (conector Baileys) desligada até funcionar; o envio é manual pelo link do WhatsApp (wa-link.js).
+const WHATSAPP_API = false;
+ui.inboxView = WHATSAPP_API && dataset === 'real' ? 'whatsapp' : 'notes';
 const whatsapp = createWhatsAppUI({ esc, btn: (...args) => btn(...args), field: (...args) => field(...args), openForm, modal, closeModal, toast, validate: validateVisibleControls,
     isExample: () => dataset === 'example',
     confirmLeaving: proceed => confirmLeaving('Há um rascunho de mensagem. Deseja sair desta tela?', proceed),
@@ -334,7 +337,7 @@ function render() {
             <nav class="mobile-bottom-nav" aria-label="Atalhos do celular">${[['dashboard','grid','Início'],['agenda','calendar','Agenda'],['conversations','chat','Conversas'],['finance','wallet','Financeiro']].map(([id, symbol, label]) => `<button type="button" data-action="nav" data-page="${id}" class="${ui.page === id ? 'active' : ''}" ${ui.page === id ? 'aria-current="page"' : ''}>${icon(symbol)}<span>${label}</span>${id === 'conversations' ? `<b class="nav-count" data-pending-total ${pendingConvs().length + whatsappPending ? '' : 'hidden'}>${pendingConvs().length + whatsappPending}</b>` : ''}</button>`).join('')}<button type="button" data-action="mobile-menu" aria-label="Abrir todas as áreas">${icon('menu')}<span>Mais</span></button></nav>
         </div>`;
     adaptTables();
-    whatsapp.mount();
+    if (WHATSAPP_API) whatsapp.mount();
 }
 
 /** Acrescenta rótulos visuais às células para ler cada registro como cartão no celular. */
@@ -354,7 +357,7 @@ function adaptTables() {
 function dashboardIntro() {
     const today = activeAppts(localDate()).filter(a => a.status !== 'blocked');
     const done = today.filter(a => a.status === 'completed').length;
-    return `<section class="atelier-welcome"><div class="welcome-copy"><span class="welcome-date">${icon('calendar')}${longDate(localDate())}</span><h1>Seu ateliê, <em>em dia.</em></h1><p>Olá, ${esc(state.settings.name)}. Agenda, produtos e dinheiro em uma rotina mais leve.</p><div class="welcome-actions">${btn('Concluir atendimento', 'v2-finish', 'check', 'primary')}${btn('Agendar', 'new-appointment', 'plus', 'secondary', 'aria-label="Agendar cliente"')}</div><div class="welcome-routine">${destinationLink('01 · Agenda', { page: 'agenda', date: localDate() }, 'welcome-step')}<i></i>${destinationLink('02 · Realizados hoje', { page: 'services', mode: 'day', date: localDate() }, 'welcome-step')}<i></i>${destinationLink('03 · Pagamentos', { page: 'finance', tab: 'history', date: localDate() }, 'welcome-step')}</div></div><div class="welcome-day"><div class="welcome-day-top"><span>Hoje, no seu espaço</span>${icon('sun')}</div>${destinationLink(today.length.toString().padStart(2, '0') + '<small>visitas na agenda</small>', { page: 'agenda', date: localDate() }, 'welcome-day-number', 'Ver visitas agendadas hoje')}<div class="welcome-day-bottom">${destinationLink(done + ' concluídas', { page: 'agenda', date: localDate(), status: 'completed' }, 'welcome-count')}${destinationLink((today.length - done) + ' em aberto', { page: 'agenda', date: localDate(), status: 'open' }, 'welcome-count')}</div>${btn('Ver minha agenda', 'nav', 'arrow', 'text', 'data-page="agenda"')}</div></section>${dataset === 'real' ? `<button type="button" class="wa-dashboard-link" data-action="nav" data-page="conversations">${icon('chat')}WhatsApp · <span data-wa-pending>${whatsappPending}</span> conversas pendentes ${icon('arrow')}</button>` : ''}${pageGuide()}`;
+    return `<section class="atelier-welcome"><div class="welcome-copy"><span class="welcome-date">${icon('calendar')}${longDate(localDate())}</span><h1>Seu ateliê, <em>em dia.</em></h1><p>Olá, ${esc(state.settings.name)}. Agenda, produtos e dinheiro em uma rotina mais leve.</p><div class="welcome-actions">${btn('Concluir atendimento', 'v2-finish', 'check', 'primary')}${btn('Agendar', 'new-appointment', 'plus', 'secondary', 'aria-label="Agendar cliente"')}</div><div class="welcome-routine">${destinationLink('01 · Agenda', { page: 'agenda', date: localDate() }, 'welcome-step')}<i></i>${destinationLink('02 · Realizados hoje', { page: 'services', mode: 'day', date: localDate() }, 'welcome-step')}<i></i>${destinationLink('03 · Pagamentos', { page: 'finance', tab: 'history', date: localDate() }, 'welcome-step')}</div></div><div class="welcome-day"><div class="welcome-day-top"><span>Hoje, no seu espaço</span>${icon('sun')}</div>${destinationLink(today.length.toString().padStart(2, '0') + '<small>visitas na agenda</small>', { page: 'agenda', date: localDate() }, 'welcome-day-number', 'Ver visitas agendadas hoje')}<div class="welcome-day-bottom">${destinationLink(done + ' concluídas', { page: 'agenda', date: localDate(), status: 'completed' }, 'welcome-count')}${destinationLink((today.length - done) + ' em aberto', { page: 'agenda', date: localDate(), status: 'open' }, 'welcome-count')}</div>${btn('Ver minha agenda', 'nav', 'arrow', 'text', 'data-page="agenda"')}</div></section>${WHATSAPP_API && dataset === 'real' ? `<button type="button" class="wa-dashboard-link" data-action="nav" data-page="conversations">${icon('chat')}WhatsApp · <span data-wa-pending>${whatsappPending}</span> conversas pendentes ${icon('arrow')}</button>` : ''}${pageGuide()}`;
 }
 
 /** Resumo do dia selecionado; o tempo soma as visitas sem incluir os intervalos reservados. */
@@ -418,6 +421,7 @@ function clientsPage() { let rows = state.clients.filter(c => (ui.clientFilter =
  */
 /** Duas origens explícitas: mensagens reais do canal e anotações do aplicativo. */
 function conversationsPage() {
+    if (!WHATSAPP_API) return manualConversationsPage();
     const real = dataset === 'real';
     const tabs = `<div class="wa-view-switch" role="group" aria-label="Origem dos atendimentos"><button type="button" class="btn ${ui.inboxView === 'whatsapp' ? 'primary' : 'secondary'}" data-action="inbox-mode" data-mode="whatsapp" aria-pressed="${ui.inboxView === 'whatsapp'}" ${real ? '' : 'disabled'}>WhatsApp ${real ? '' : '· abra os dados reais'}</button><button type="button" class="btn ${ui.inboxView === 'notes' ? 'primary' : 'secondary'}" data-action="inbox-mode" data-mode="notes" aria-pressed="${ui.inboxView === 'notes'}">Notas internas</button></div>`;
     return ui.inboxView === 'whatsapp' && real ? heading('Atendimentos', 'Conversas reais, com o próximo passo sempre à vista.') + tabs + '<div id="whatsapp-root"></div>' : tabs + manualConversationsPage();
@@ -620,7 +624,7 @@ function profile(id, tab = 'overview') {
         body = state.records.filter(r => r.clientId === id).sort((a, b) => b.date.localeCompare(a.date)).map(r => `<div class="history-item"><time>${fmt(r.date, { day: 'numeric', month: 'long', year: 'numeric' })}</time><strong>${esc(service(r.serviceId).name)}</strong>${r.formula ? `<p>Fórmula registrada: ${esc(r.formula)}</p>` : ''}<p>${esc(r.notes)}</p>${btn('Consultar ficha', 'edit-record', 'arrow', 'text', `data-id="${r.id}"`)}</div>`).join('') || empty('Nenhum serviço realizado.');
     if (tab === 'payments')
         body = state.bills.filter(b => b.clientId === id).map(b => `<div class="history-item"><time>${fmt(b.date)}</time><strong>${esc(b.description)} · ${money(b.total)}</strong><p>Recebido: ${money(receivedFor(b, state.payments))} · Saldo: ${money(balanceFor(b, state.payments))}</p>${btn('Ver lançamento', 'bill-detail', 'arrow', 'text', `data-id="${b.id}"`)}</div>`).join('') || empty('Nenhum lançamento financeiro.');
-    modal('História da cliente', `<div class="dialog-body"><div class="profile-header">${avatar(c, 'lg')}<div><h3>${esc(c.name)}</h3><span class="muted small">Um cuidado com nome, contexto e história.</span></div></div><div class="tabs profile-tabs">${tabs.map(([v, t]) => `<button data-action="profile-tab" data-tab="${v}" data-id="${id}" class="${tab === v ? 'active' : ''}">${t}</button>`).join('')}</div><div class="profile-section">${body}</div></div>`, btn('Editar cadastro', 'edit-client', 'edit', 'secondary', `data-id="${id}"`) + btn('Agendar', 'new-appointment', 'plus', 'primary', `data-client="${id}"`), true);
+    modal('História da cliente', `<div class="dialog-body"><div class="profile-header">${avatar(c, 'lg')}<div><h3>${esc(c.name)}</h3><span class="muted small">Um cuidado com nome, contexto e história.</span></div></div><div class="tabs profile-tabs">${tabs.map(([v, t]) => `<button data-action="profile-tab" data-tab="${v}" data-id="${id}" class="${tab === v ? 'active' : ''}">${t}</button>`).join('')}</div><div class="profile-section">${body}</div></div>`, btn('WhatsApp', 'wa-client', 'chat', 'secondary', `data-id="${id}"`) + btn('Editar cadastro', 'edit-client', 'edit', 'secondary', `data-id="${id}"`) + btn('Agendar', 'new-appointment', 'plus', 'primary', `data-client="${id}"`), true);
 }
 /**
  * appointmentForm — Abre agendamento com duração e intervalo do serviço.
@@ -672,7 +676,7 @@ function appointmentDetail(id) {
         openForm('Bloqueio de horário', 'delete-block', `<div class="full"><h3>${esc(a.label)}</h3><p class="muted small section-gap">${longDate(a.date)} · ${a.time} — ${clock(minutes(a.time) + a.duration)}</p><p class="muted small section-gap">${esc(a.note)}</p></div><div class="notice full">Confirme abaixo para remover este bloqueio e liberar o período.</div>`, 'Remover bloqueio', id);
         return;
     }
-    openForm('Detalhes do atendimento', 'appointment-status', `<div class="row full">${avatar(client(a.clientId))}<div><h3>${esc(client(a.clientId).name)}</h3><p class="muted small" style="margin-top:7px">${esc(service(a.serviceId).name)}</p></div></div><div class="notice full">${longDate(a.date)} · ${a.time} — ${clock(minutes(a.time) + a.duration)}<br>+ ${a.buffer} min de intervalo reservado</div>` + selectField('Situação confirmada por você', 'status', Object.entries(statusLabel).filter(([k]) => !['blocked', 'completed'].includes(k)), a.status, '', true) + textfield('Observações', 'note', a.note, 'maxlength="2000"') + `<div class="full row wrap">${btn('Remarcar', 'reschedule', 'calendar', 'secondary', `data-id="${id}"`)}${btn('Concluir atendimento', 'new-record', 'scissors', 'secondary', `data-appointment="${id}"`)}</div>`, 'Salvar situação', id);
+    openForm('Detalhes do atendimento', 'appointment-status', `<div class="row full">${avatar(client(a.clientId))}<div><h3>${esc(client(a.clientId).name)}</h3><p class="muted small" style="margin-top:7px">${esc(service(a.serviceId).name)}</p></div></div><div class="notice full">${longDate(a.date)} · ${a.time} — ${clock(minutes(a.time) + a.duration)}<br>+ ${a.buffer} min de intervalo reservado</div>` + selectField('Situação confirmada por você', 'status', Object.entries(statusLabel).filter(([k]) => !['blocked', 'completed'].includes(k)), a.status, '', true) + textfield('Observações', 'note', a.note, 'maxlength="2000"') + `<div class="full row wrap">${btn('Confirmar pelo WhatsApp', 'wa-appointment', 'chat', 'secondary', `data-id="${id}" data-kind="confirm"`)}${btn('Lembrete pelo WhatsApp', 'wa-appointment', 'bell', 'secondary', `data-id="${id}" data-kind="reminder"`)}${btn('Remarcar', 'reschedule', 'calendar', 'secondary', `data-id="${id}"`)}${btn('Concluir atendimento', 'new-record', 'scissors', 'secondary', `data-appointment="${id}"`)}</div>`, 'Salvar situação', id);
 }
 /**
  * reschedule — Abre alteração de data e horário sem criar outro compromisso.
@@ -709,8 +713,7 @@ function quoteForm(id) {
     const q = state.quotes.find(q => q.id === id);
     quotePhotos = [...(q?.photos || [])];
     openForm(q ? 'Avaliar solicitação' : 'Novo orçamento', 'quote', clientPicker('Cliente', q?.clientId || state.clients[0]?.id, { extra: 'required', full: false }) + selectField('Serviço solicitado', 'serviceId', serviceOptions(), q?.serviceId || state.services[0]?.id, 'required') + selectField('Etapa da avaliação', 'status', Object.entries(quoteLabel), q?.status || 'review', 'required') + field('Valor definido por você (R$)', 'value', q?.value ?? '', 'number', 'min="0.01" max="100000" step="0.01"') + textfield('Contexto, histórico e informações ausentes', 'notes', q?.notes || '', 'maxlength="3000"') + textfield('Perguntas para revisar e copiar', 'question', q?.question || '', 'maxlength="3000"') + `<div class="full"><label class="field"><span>Fotos associadas manualmente</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple data-change="quote-photos"><small>Até 3 fotos, com no máximo 500 KB cada. Sem análise visual.</small></label><div class="photos" id="quote-photos">${photoMarkup()}</div></div>` + '<div class="notice full">Salvar registra sua avaliação. Nenhuma proposta ou pergunta é enviada à cliente. Copie o texto revisado para usar no seu canal de atendimento.</div>', 'Salvar avaliação', id || '', true);
-    if (q?.question)
-        document.querySelector('dialog .dialog-footer').insertAdjacentHTML('afterbegin', btn('Copiar perguntas', 'copy-question', 'copy', 'secondary'));
+    document.querySelector('dialog .dialog-footer').insertAdjacentHTML('afterbegin', (q?.question ? btn('Copiar perguntas', 'copy-question', 'copy', 'secondary') : '') + btn('Perguntas pelo WhatsApp', 'wa-quote', 'chat', 'secondary'));
 }
 /**
  * photoMarkup — Renderiza prévias das fotos do orçamento mantidas temporariamente em memória.
@@ -727,7 +730,7 @@ function taskForm(id) { const t = state.tasks.find(t => t.id === id); openForm(t
 /**
  * reviewDraft — Permite revisar um texto de resposta antes de copiá-lo; não envia mensagens.
  */
-function reviewDraft(id, followup = false) { const v = state.conversations.find(v => v.id === id), r = state.records.find(r => r.id === id); const text = followup ? `Oi, ${client(r.clientId).name.split(' ')[0]}! Tudo bem? Estou passando para saber como ficou o resultado do nosso último atendimento e conversar sobre os próximos cuidados.` : v?.draft || ''; openForm(followup ? 'O cuidado continua' : 'Revisar rascunho', 'draft', `<input type="hidden" name="followup" value="${followup}">` + textfield('Edite e confira antes de copiar', 'text', text, 'required maxlength="4000"') + '<div class="notice full">Copiar prepara o texto revisado para envio manual. Faça o envio manual no seu canal, após revisar a orientação e a destinatária.</div>', 'Confirmar e copiar', id); }
+function reviewDraft(id, followup = false) { const v = state.conversations.find(v => v.id === id), r = state.records.find(r => r.id === id); const text = followup ? `Oi, ${client(r.clientId).name.split(' ')[0]}! Tudo bem? Estou passando para saber como ficou o resultado do nosso último atendimento e conversar sobre os próximos cuidados.` : v?.draft || ''; openForm(followup ? 'O cuidado continua' : 'Revisar rascunho', 'draft', `<input type="hidden" name="followup" value="${followup}">` + textfield('Edite e confira antes de copiar', 'text', text, 'required maxlength="4000"') + '<div class="notice full">Copiar prepara o texto revisado para envio manual. Faça o envio manual no seu canal, após revisar a orientação e a destinatária.</div>', 'Confirmar e copiar', id); if (!followup && v) document.querySelector('#dialog .dialog-footer')?.insertAdjacentHTML('afterbegin', btn('Abrir no WhatsApp', 'wa-draft', 'chat', 'secondary', `data-id="${esc(id)}"`)); }
 /**
  * copyText — Copia texto para a área de transferência e informa o resultado.
  */
@@ -752,6 +755,106 @@ async function copyText(text) {
         return ok;
     }
 }
+/**
+ * waComposer — Mensagem editável e link para abrir a conversa da cliente no WhatsApp.
+ * Abre por cima do formulário atual (sem perder o que foi digitado). Nada é enviado pelo sistema:
+ * o envio acontece no WhatsApp, e as respostas chegam lá, pelas notificações do celular.
+ */
+let waContext = null;
+/** Resumo do caso da cliente para a profissional saber com quem está falando antes de enviar. Somente leitura. */
+function waClientContext(c) {
+    const today = localDate(), short = d => fmt(d, { day: '2-digit', month: '2-digit', year: 'numeric' }), items = [];
+    const item = (label, value, tone = '') => items.push(`<div class="wa-ctx-item ${tone}"><dt>${label}</dt><dd>${value}</dd></div>`);
+    if (c.alert) item(icon('warning') + 'Alerta técnico', esc(c.alert), 'red');
+    if (c.status === 'temporary') item('Cadastro', 'Temporário · ainda não confirmado', 'orange');
+    if (c.note) item('Preferências e observações', esc(c.note));
+    const conv = state.conversations.filter(v => v.clientId === c.id && v.status !== 'resolved')[0];
+    if (conv) item('Conversa pendente', `<strong>${esc(conv.category)}</strong> · ${esc(conv.summary || conv.messages?.at(-1)?.text || '')}`, ['Segurança', 'Reclamação'].includes(conv.category) ? 'red' : '');
+    const next = state.appointments.filter(a => a.clientId === c.id && a.date >= today && !['cancelled', 'absent', 'completed', 'blocked'].includes(a.status)).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
+    if (next) item('Próximo horário', `${esc(service(next.serviceId).name)} · ${esc(longDate(next.date))} às ${next.time} · ${esc(statusLabel[next.status] || '')}`);
+    const last = state.records.filter(r => r.clientId === c.id).sort((a, b) => b.date.localeCompare(a.date))[0];
+    if (last) item('Último atendimento', `${esc((last.serviceIds || [last.serviceId]).map(id => service(id).name).join(' + '))} · ${short(last.date)}${last.formula ? `<br><small>Fórmula: ${esc(last.formula)}</small>` : ''}${last.followup ? `<br><small>Manutenção sugerida: ${short(last.followup)}</small>` : ''}`);
+    const open = state.bills.filter(b => b.clientId === c.id).map(b => ({ b, balance: balanceFor(b, state.payments) })).filter(x => x.balance > 0.004);
+    if (open.length) { const total = open.reduce((s, x) => s + x.balance, 0), late = open.filter(x => x.b.due < today); item('Saldo em aberto', `${money(total)} em ${open.length} cobrança${open.length === 1 ? '' : 's'}${late.length ? ` · <strong>${late.length} vencida${late.length === 1 ? '' : 's'}</strong>` : ''}`, late.length ? 'red' : 'orange'); }
+    const deposits = availableDeposits(state, c.id);
+    if (deposits.length) item('Sinal disponível', money(deposits.reduce((s, p) => s + p.amount, 0)));
+    const quote = state.quotes.filter(q => q.clientId === c.id && !['closed'].includes(q.status)).sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
+    if (quote) item('Orçamento', `${esc(service(quote.serviceId).name)} · ${esc(quoteLabel[quote.status] || '')}${quote.value ? ' · ' + money(quote.value) : ''}${quote.notes ? `<br><small>${esc(quote.notes)}</small>` : ''}`);
+    const log = (c.waLog || []).slice(0, 3);
+    const history = log.length ? `<div class="wa-ctx-history"><strong>Mensagens já enviadas por aqui</strong>${log.map(m => `<details><summary>${esc(new Date(m.at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))} · ${esc(m.context || 'Mensagem')}</summary><p>${esc(m.text)}</p></details>`).join('')}</div>` : '';
+    if (!items.length && !history) return '<p class="muted small wa-ctx-empty">Sem pendências, observações ou histórico registrados para esta cliente.</p>';
+    return `<dl class="wa-ctx-list">${items.join('')}</dl>${history}`;
+}
+function waComposer(clientId, text, { title = 'Enviar pelo WhatsApp', context = '', onOpen = null } = {}) {
+    const c = state.clients.find(c => c.id === clientId);
+    if (!c) { toast('Escolha uma cliente antes de enviar pelo WhatsApp.'); return; }
+    waClose();
+    waContext = { clientId, context, onOpen, title };
+    const d = document.createElement('dialog');
+    d.id = 'wa-dialog'; d.className = 'wa-dialog'; d.setAttribute('aria-labelledby', 'wa-title');
+    d.innerHTML = `<div class="dialog-head"><h2 id="wa-title">${esc(title)}</h2>${iconBtn('close', 'wa-close', 'Fechar janela')}</div><div class="dialog-body"><div class="row wa-recipient">${avatar(c)}<div><h3>${esc(c.name)}</h3>${context ? `<p class="muted small">${esc(context)}</p>` : ''}</div></div><details class="wa-context" open><summary>${icon('info')}Contexto da cliente</summary>${waClientContext(c)}${destinationLink('Ver ficha completa ' + icon('arrow'), { page: 'clients', client: c.id }, 'btn text sm')}</details><div class="form-grid"><label class="field full"><span>Telefone do WhatsApp</span><input name="waPhone" type="tel" inputmode="tel" maxlength="30" autocomplete="off" value="${esc(c.phone)}" data-input="wa-compose"><small class="wa-phone-hint" aria-live="polite"></small></label><label class="field full"><span>Mensagem (edite antes de abrir o WhatsApp)</span><textarea name="waText" maxlength="4000" rows="8" data-input="wa-compose">${esc(text)}</textarea></label></div><p class="notice">O WhatsApp abre com este texto pronto. Confira e toque em enviar por lá. As respostas da cliente chegam no seu WhatsApp, como sempre.</p></div><div class="dialog-footer">${btn('Copiar texto', 'wa-copy', 'copy', 'secondary')}<a class="btn primary" data-action="wa-open" href="#" target="_blank" rel="noopener noreferrer">${icon('chat')}Abrir no WhatsApp</a></div>`;
+    document.body.append(d);
+    d.addEventListener('cancel', e => { e.preventDefault(); waClose(); });
+    d.showModal();
+    waUpdate();
+    const area = d.querySelector('[name="waText"]');
+    area.style.height = Math.min(420, Math.max(160, area.scrollHeight)) + 'px';
+    area.focus(); area.setSelectionRange(area.value.length, area.value.length);
+}
+/** Recalcula o link a cada alteração do telefone ou do texto. */
+function waUpdate() {
+    const d = document.getElementById('wa-dialog');
+    if (!d) return;
+    const phone = d.querySelector('[name="waPhone"]').value, text = d.querySelector('[name="waText"]').value, link = d.querySelector('[data-action="wa-open"]'), url = text.trim() ? waURL(phone, text) : '';
+    link.href = url || '#';
+    if (url) link.removeAttribute('aria-disabled'); else link.setAttribute('aria-disabled', 'true');
+    const number = waPhone(phone), hint = d.querySelector('.wa-phone-hint');
+    hint.textContent = number ? `Abrirá a conversa com +${number}. Alterar aqui não muda o cadastro.` : 'Confira o telefone, com DDD, para abrir o WhatsApp.';
+    hint.classList.toggle('error', !number);
+}
+function waClose() { const d = document.getElementById('wa-dialog'); d?.close(); d?.remove(); waContext = null; }
+/** Agenda: confirmação do horário ou lembrete. */
+function waAppointment(id, kind) {
+    const a = state.appointments.find(a => a.id === id);
+    if (!a?.clientId) return;
+    const c = client(a.clientId), s = service(a.serviceId).name;
+    const text = kind === 'reminder' ? waMessages.reminder({ name: c.name, service: s, when: whenText(a.date, localDate(), longDate(a.date)), time: a.time }) : waMessages.confirm({ name: c.name, salon: state.settings.name, service: s, date: longDate(a.date), time: a.time });
+    waComposer(a.clientId, text, { title: kind === 'reminder' ? 'Lembrete pelo WhatsApp' : 'Confirmação pelo WhatsApp', context: `${s} · ${fmt(a.date)} às ${a.time}` });
+}
+/** Financeiro: lembrete do saldo em aberto de uma cobrança. */
+function waBill(id) {
+    const b = state.bills.find(b => b.id === id);
+    if (!b) return;
+    const balance = balanceFor(b, state.payments), full = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    if (balance <= 0.004) { toast('Esta cobrança já está quitada.'); return; }
+    waComposer(b.clientId, waMessages.charge({ name: client(b.clientId).name, balance: money(balance), description: b.description, date: fmt(b.date, full), due: fmt(b.due, full) }), { title: 'Cobrança pelo WhatsApp', context: `${b.description} · saldo ${money(balance)}` });
+}
+/** Pós-atendimento: pergunta como ficou o resultado. */
+function waFollowup(recordId) {
+    const r = state.records.find(r => r.id === recordId);
+    if (r) waComposer(r.clientId, waMessages.followup({ name: client(r.clientId).name }), { title: 'Pós-atendimento pelo WhatsApp', context: `Atendimento de ${fmt(r.date)}` });
+}
+document.addEventListener('input', e => { if (e.target.dataset?.input === 'wa-compose') waUpdate(); });
+/** Abrir a ficha a partir do contexto fecha a janela de envio. */
+document.addEventListener('click', e => { if (e.target.closest?.('#wa-dialog .wa-context a')) setTimeout(waClose); }, true);
+document.addEventListener('click', async e => {
+    const t = e.target.closest?.('#wa-dialog [data-action]');
+    if (!t) return;
+    const d = document.getElementById('wa-dialog'), text = d.querySelector('[name="waText"]').value;
+    if (t.dataset.action === 'wa-close') waClose();
+    if (t.dataset.action === 'wa-copy') toast(await copyText(text) ? 'Texto copiado.' : 'Não foi possível copiar. Selecione o texto manualmente.');
+    if (t.dataset.action === 'wa-open') {
+        if (t.getAttribute('aria-disabled') === 'true') { e.preventDefault(); toast(text.trim() ? 'Confira o telefone, com DDD, para abrir o WhatsApp.' : 'Escreva a mensagem antes de abrir o WhatsApp.'); return; }
+        const ctx = waContext, c = client(ctx.clientId);
+        ctx.onOpen?.(text);
+        const target = state.clients.find(x => x.id === ctx.clientId);
+        if (target) target.waLog = [{ at: new Date().toISOString(), context: (ctx.title === 'Enviar pelo WhatsApp' ? 'Mensagem' : (ctx.title || 'Mensagem').replace(/ pelo WhatsApp$/, '')) + (ctx.context ? ' · ' + ctx.context : ''), text: text.slice(0, 1000) }, ...(target.waLog || [])].slice(0, 10);
+        audit('Mensagem preparada no WhatsApp para ' + c.name + (ctx.context ? ' · ' + ctx.context : ''));
+        if (!['error', 'conflict', 'loading'].includes(syncStatus)) persist('WhatsApp aberto com a mensagem. Confira e envie por lá.');
+        waClose();
+    }
+}, true);
+
 /**
  * exportModal — Abre seleção de categoria, período e formato de exportação.
  */
@@ -1023,6 +1126,12 @@ document.addEventListener('click', async (e) => {
     if (a === 'edit-client')
         clientForm(id);
     if (a === 'booking-client-mode') setBookingClientMode(target.closest('form'), target.dataset.mode);
+    if (a === 'wa-appointment') waAppointment(id, target.dataset.kind);
+    if (a === 'wa-bill') waBill(id);
+    if (a === 'wa-followup') waFollowup(id);
+    if (a === 'wa-client') waComposer(id, waMessages.free({ name: client(id).name }));
+    if (a === 'wa-quote') { const f = target.closest('dialog')?.querySelector('form'), q = f?.elements.question.value || ''; if (!q.trim()) toast('Escreva as perguntas antes de enviar.'); else waComposer(f.elements.clientId.value, waMessages.quote({ name: client(f.elements.clientId.value).name, service: service(f.elements.serviceId.value).name, questions: q }), { title: 'Orçamento pelo WhatsApp', context: 'Perguntas do orçamento' }); }
+    if (a === 'wa-draft') { const v = state.conversations.find(v => v.id === id), text = target.closest('dialog')?.querySelector('form')?.elements.text.value || ''; if (v) waComposer(v.clientId, text, { title: 'Rascunho pelo WhatsApp', context: 'Rascunho da conversa', onOpen: t => { v.draft = t; } }); }
     if (a === 'quick-client-toggle') { const box = target.closest('[data-quick-client]'); setQuickClient(box, box.querySelector('.quick-client-new').hidden); }
     if (a === 'quick-client-save') saveQuickClient(target.closest('[data-quick-client]'));
     if (a === 'quick-client-use') pickQuickClient(target.closest('[data-quick-client]'), id);
@@ -1106,7 +1215,7 @@ document.addEventListener('click', async (e) => {
     if (a === 'review-draft')
         reviewDraft(id);
     if (a === 'followup')
-        reviewDraft(id, true);
+        waFollowup(id);
     if (a === 'export')
         exportData(target.dataset.kind);
     if (a === 'export-modal')
@@ -2457,7 +2566,7 @@ document.addEventListener('click', e => {
     if (!b)
         return;
     if (b.dataset.action === 'v4-open-pending') {
-        ui.inboxView = dataset === 'real' && whatsappPending > 0 ? 'whatsapp' : 'notes';
+        ui.inboxView = WHATSAPP_API && dataset === 'real' && whatsappPending > 0 ? 'whatsapp' : 'notes';
         ui.convFilter = 'open';
         ui.conversationId = pendingConvs()[0]?.id || '';
         go('conversations');
