@@ -247,7 +247,7 @@ function currentDestination() {
 /** Encaminha a consulta ao proprietário do registro; nenhuma navegação confirma uma operação. */
 function openDestinationDetail(target) {
     if (['record', 'bill', 'payment', 'expense', 'installment', 'appointment', 'product'].some(key => target[key]) || target.page === 'clients' && target.client) currentDetailTarget = target;
-    const views = detailViews({ state: () => state, esc, money, fmt, link: destinationLink, modal, btn, client, service, billBalance, billPaid, stockNumber });
+    const views = detailViews({ state: () => state, esc, money, fmt, link: destinationLink, modal, btn, client, service, billBalance, billPaid, stockNumber, deleteBtn });
     if (target.record) return views.record(target.record);
     if (target.bill) return views.bill(target.bill);
     if (target.payment) return views.payment(target.payment);
@@ -426,7 +426,7 @@ function conversationsPage() {
     const tabs = `<div class="wa-view-switch" role="group" aria-label="Origem dos atendimentos"><button type="button" class="btn ${ui.inboxView === 'whatsapp' ? 'primary' : 'secondary'}" data-action="inbox-mode" data-mode="whatsapp" aria-pressed="${ui.inboxView === 'whatsapp'}" ${real ? '' : 'disabled'}>WhatsApp ${real ? '' : '· abra os dados reais'}</button><button type="button" class="btn ${ui.inboxView === 'notes' ? 'primary' : 'secondary'}" data-action="inbox-mode" data-mode="notes" aria-pressed="${ui.inboxView === 'notes'}">Notas internas</button></div>`;
     return ui.inboxView === 'whatsapp' && real ? heading('Atendimentos', 'Conversas reais, com o próximo passo sempre à vista.') + tabs + '<div id="whatsapp-root"></div>' : tabs + manualConversationsPage();
 }
-function manualConversationsPage() { const convs = state.conversations.filter(v => ui.convFilter === 'all' || (ui.convFilter === 'resolved' ? v.status === 'resolved' : ui.convFilter === 'open' ? v.status !== 'resolved' : v.category === ui.convFilter)); let v = convs.find(v => v.id === ui.conversationId) || convs[0], c = v ? client(v.clientId) : null; return `${heading('Atendimentos', 'Organize as conversas e acompanhe o que ainda precisa de resposta.', btn('Sobre a integração', 'integrations', 'link', 'secondary'))}<div class="card inbox ${ui.threadOpen ? 'mobile-thread' : ''}"><aside class="inbox-list"><div class="inbox-list-head"><div class="row between inbox-pending-count"><strong>Atendimentos pendentes</strong>${pill(pendingConvs().length, 'orange')}</div><select data-change="conv-filter" aria-label="Filtrar conversas">${[['all', 'Todas as conversas'], ['open', 'Pendentes'], ['Segurança', 'Segurança'], ['Orçamento', 'Orçamentos'], ['resolved', 'Resolvidas']].map(([val, t]) => `<option value="${val}" ${ui.convFilter === val ? 'selected' : ''}>${t}</option>`).join('')}</select></div>${convs.map(x => `<button class="inbox-item ${v?.id === x.id ? 'active' : ''}" data-action="select-conversation" data-id="${x.id}">${avatar(client(x.clientId))}<div class="grow"><div class="row between gap6"><span class="name">${esc(client(x.clientId).name)}</span><small class="muted">${esc(x.time)}</small></div><p>${esc(x.messages.at(-1)?.text)}</p>${pill(x.status === 'resolved' ? 'Resolvida' : x.category, x.status === 'resolved' ? 'gray' : categoryColor(x.category))}</div></button>`).join('') || empty('Nenhuma conversa neste filtro.', '', 'chat')}</aside><section class="thread">${v ? `<header class="thread-head row">${iconBtn('left', 'back-inbox', 'Voltar para conversas', 'style="display:none" class="icon-btn thread-back"')}${avatar(c)}<button data-action="client-profile" data-id="${c.id}" style="text-align:left"><h3>${esc(c.name)}</h3><small>${esc(c.phone)} · ${c.status === 'temporary' ? 'Contato temporário' : 'Cliente confirmado'}</small></button><div class="thread-tools">${iconBtn('edit', 'classify', 'Alterar classificação', `data-id="${v.id}"`)}${btn(v.status === 'resolved' ? 'Reabrir' : 'Resolver', 'resolve-conversation', v.status === 'resolved' ? 'undo' : 'check', 'secondary sm', `data-id="${v.id}"`)}</div></header>${v.category === 'Segurança' && v.status !== 'resolved' ? `<div class="notice red" style="border-radius:0">${icon('warning')}Relato de segurança: avalie pessoalmente o contexto antes de orientar a cliente.</div>` : ''}<div class="thread-body"><div class="thread-date">Histórico de notas internas</div>${v.messages.map(m => `<div class="bubble ${m.type === 'note' ? 'note' : ''}">${m.type === 'note' ? '<span class="eyebrow">Nota interna</span><br>' : ''}${esc(m.text)}<time>${esc(m.time)}</time></div>`).join('')}</div><div class="summary-box"><strong>${icon('spark')}Contexto da conversa ${pill('IA pendente', 'gray')}</strong><p>${esc(v.summary)}</p></div>${v.draft ? `<div class="draft-box"><div class="row between"><h3>Rascunho para sua revisão</h3>${pill('Aprovação manual', 'orange')}</div><p>${esc(v.draft)}</p>${btn('Revisar e copiar', 'review-draft', 'edit', 'secondary sm', `data-id="${v.id}"`)}</div>` : ''}<form novalidate id="note-form" class="composer" data-form="note"><input type="hidden" name="id" value="${v.id}"><label class="field"><span>Registrar uma nota interna</span><textarea class="resize-none" name="text" required maxlength="3000" placeholder="Contexto, observações ou próximos passos..."></textarea></label><div class="composer-footer"><span class="muted small">Nota interna: não será enviada pelo WhatsApp.</span><button class="btn primary" type="submit">${icon('plus')}Salvar nota</button></div></form>` : empty('Selecione uma conversa.', 'As mensagens de exemplo aparecem aqui.', 'chat')}</section></div>`; }
+function manualConversationsPage() { const convs = state.conversations.filter(v => ui.convFilter === 'all' || (ui.convFilter === 'resolved' ? v.status === 'resolved' : ui.convFilter === 'open' ? v.status !== 'resolved' : v.category === ui.convFilter)); let v = convs.find(v => v.id === ui.conversationId) || convs[0], c = v ? client(v.clientId) : null; return `${heading('Atendimentos', 'Organize as conversas e acompanhe o que ainda precisa de resposta.', btn('Sobre a integração', 'integrations', 'link', 'secondary'))}<div class="card inbox ${ui.threadOpen ? 'mobile-thread' : ''}"><aside class="inbox-list"><div class="inbox-list-head"><div class="row between inbox-pending-count"><strong>Atendimentos pendentes</strong>${pill(pendingConvs().length, 'orange')}</div><select data-change="conv-filter" aria-label="Filtrar conversas">${[['all', 'Todas as conversas'], ['open', 'Pendentes'], ['Segurança', 'Segurança'], ['Orçamento', 'Orçamentos'], ['resolved', 'Resolvidas']].map(([val, t]) => `<option value="${val}" ${ui.convFilter === val ? 'selected' : ''}>${t}</option>`).join('')}</select></div>${convs.map(x => `<button class="inbox-item ${v?.id === x.id ? 'active' : ''}" data-action="select-conversation" data-id="${x.id}">${avatar(client(x.clientId))}<div class="grow"><div class="row between gap6"><span class="name">${esc(client(x.clientId).name)}</span><small class="muted">${esc(x.time)}</small></div><p>${esc(x.messages.at(-1)?.text)}</p>${pill(x.status === 'resolved' ? 'Resolvida' : x.category, x.status === 'resolved' ? 'gray' : categoryColor(x.category))}</div></button>`).join('') || empty('Nenhuma conversa neste filtro.', '', 'chat')}</aside><section class="thread">${v ? `<header class="thread-head row">${iconBtn('left', 'back-inbox', 'Voltar para conversas', 'style="display:none" class="icon-btn thread-back"')}${avatar(c)}<button data-action="client-profile" data-id="${c.id}" style="text-align:left"><h3>${esc(c.name)}</h3><small>${esc(c.phone)} · ${c.status === 'temporary' ? 'Contato temporário' : 'Cliente confirmado'}</small></button><div class="thread-tools">${iconBtn('edit', 'classify', 'Alterar classificação', `data-id="${v.id}"`)}${iconBtn('close', 'v12-delete-confirm', 'Excluir esta conversa', `data-collection="conversations" data-id="${v.id}"`)}${btn(v.status === 'resolved' ? 'Reabrir' : 'Resolver', 'resolve-conversation', v.status === 'resolved' ? 'undo' : 'check', 'secondary sm', `data-id="${v.id}"`)}</div></header>${v.category === 'Segurança' && v.status !== 'resolved' ? `<div class="notice red" style="border-radius:0">${icon('warning')}Relato de segurança: avalie pessoalmente o contexto antes de orientar a cliente.</div>` : ''}<div class="thread-body"><div class="thread-date">Histórico de notas internas</div>${v.messages.map(m => `<div class="bubble ${m.type === 'note' ? 'note' : ''}">${m.type === 'note' ? '<span class="eyebrow">Nota interna</span><br>' : ''}${esc(m.text)}<time>${esc(m.time)}</time></div>`).join('')}</div><div class="summary-box"><strong>${icon('spark')}Contexto da conversa ${pill('IA pendente', 'gray')}</strong><p>${esc(v.summary)}</p></div>${v.draft ? `<div class="draft-box"><div class="row between"><h3>Rascunho para sua revisão</h3>${pill('Aprovação manual', 'orange')}</div><p>${esc(v.draft)}</p>${btn('Revisar e copiar', 'review-draft', 'edit', 'secondary sm', `data-id="${v.id}"`)}</div>` : ''}<form novalidate id="note-form" class="composer" data-form="note"><input type="hidden" name="id" value="${v.id}"><label class="field"><span>Registrar uma nota interna</span><textarea class="resize-none" name="text" required maxlength="3000" placeholder="Contexto, observações ou próximos passos..."></textarea></label><div class="composer-footer"><span class="muted small">Nota interna: não será enviada pelo WhatsApp.</span><button class="btn primary" type="submit">${icon('plus')}Salvar nota</button></div></form>` : empty('Selecione uma conversa.', 'As mensagens de exemplo aparecem aqui.', 'chat')}</section></div>`; }
 /**
  * agendaPage — Renderiza a agenda diária ou de cinco dias.
  */
@@ -603,7 +603,7 @@ const serviceOptions = () => state.services.map(s => [s.id, s.name]);
 /**
  * clientForm — Abre cadastro ou edição de cliente e confirma o tipo de cadastro.
  */
-function clientForm(id) { const c = state.clients.find(c => c.id === id); openForm(c ? 'Editar cadastro' : 'Um novo encontro', 'client', field('Nome', 'name', c?.name || '', 'text', 'required maxlength="100"', true) + field('Telefone', 'phone', c?.phone || '', 'tel', 'required maxlength="30"', true) + selectField('Situação do cadastro', 'status', [['temporary', 'Temporário'], ['permanent', 'Confirmado']], c?.status || 'temporary', '', true) + textfield('Preferências e observações', 'note', c?.note || '', 'maxlength="3000"') + textfield('Alerta técnico relatado (opcional)', 'alert', c?.alert || '', 'maxlength="1000"') + '<div class="notice full">Ao salvar como confirmado, você aprova o cadastro e a associação deste telefone. Confirme os dados e a associação deste telefone antes de salvar.</div>', c ? 'Confirmar alterações' : 'Salvar cadastro', id || ''); }
+function clientForm(id) { const c = state.clients.find(c => c.id === id); openForm(c ? 'Editar cadastro' : 'Um novo encontro', 'client', field('Nome', 'name', c?.name || '', 'text', 'required maxlength="100"', true) + field('Telefone', 'phone', c?.phone || '', 'tel', 'required maxlength="30"', true) + selectField('Situação do cadastro', 'status', [['temporary', 'Temporário'], ['permanent', 'Confirmado']], c?.status || 'temporary', '', true) + textfield('Preferências e observações', 'note', c?.note || '', 'maxlength="3000"') + textfield('Alerta técnico relatado (opcional)', 'alert', c?.alert || '', 'maxlength="1000"') + '<div class="notice full">Ao salvar como confirmado, você aprova o cadastro e a associação deste telefone. Confirme os dados e a associação deste telefone antes de salvar.</div>', c ? 'Confirmar alterações' : 'Salvar cadastro', id || ''); if (c) addFooterDelete('clients', id, 'Excluir cliente'); }
 /**
  * profile — Exibe ficha de cliente e seus vínculos com agenda, financeiro e histórico.
  */
@@ -668,7 +668,7 @@ function appointmentDetail(id) {
         return;
     if (a.status === 'completed') {
         const r = state.records.find(r => r.appointmentId === id);
-        modal('Agendamento concluído', `<div class="dialog-body"><h3>${esc(client(a.clientId).name)}</h3><p class="notice">${longDate(a.date)} · ${a.time} · ${a.duration} min + ${a.buffer} min de intervalo<br>Concluído</p>${r ? destinationLink('Ver atendimento realizado', { page: 'services', record: r.id }, 'btn primary') : '<p class="muted">Nenhuma ficha vinculada encontrada.</p>'}</div>`, btn('Fechar', 'close-modal'));
+        modal('Agendamento concluído', `<div class="dialog-body"><h3>${esc(client(a.clientId).name)}</h3><p class="notice">${longDate(a.date)} · ${a.time} · ${a.duration} min + ${a.buffer} min de intervalo<br>Concluído</p>${r ? destinationLink('Ver atendimento realizado', { page: 'services', record: r.id }, 'btn primary') : '<p class="muted">Nenhuma ficha vinculada encontrada.</p>'}</div>`, deleteBtn('appointments', id) + btn('Fechar', 'close-modal'));
         return;
     }
     const blocked = a.status === 'blocked';
@@ -676,7 +676,7 @@ function appointmentDetail(id) {
         openForm('Bloqueio de horário', 'delete-block', `<div class="full"><h3>${esc(a.label)}</h3><p class="muted small section-gap">${longDate(a.date)} · ${a.time} — ${clock(minutes(a.time) + a.duration)}</p><p class="muted small section-gap">${esc(a.note)}</p></div><div class="notice full">Confirme abaixo para remover este bloqueio e liberar o período.</div>`, 'Remover bloqueio', id);
         return;
     }
-    openForm('Detalhes do atendimento', 'appointment-status', `<div class="row full">${avatar(client(a.clientId))}<div><h3>${esc(client(a.clientId).name)}</h3><p class="muted small" style="margin-top:7px">${esc(service(a.serviceId).name)}</p></div></div><div class="notice full">${longDate(a.date)} · ${a.time} — ${clock(minutes(a.time) + a.duration)}<br>+ ${a.buffer} min de intervalo reservado</div>` + selectField('Situação confirmada por você', 'status', Object.entries(statusLabel).filter(([k]) => !['blocked', 'completed'].includes(k)), a.status, '', true) + textfield('Observações', 'note', a.note, 'maxlength="2000"') + `<div class="full row wrap">${btn('Confirmar pelo WhatsApp', 'wa-appointment', 'chat', 'secondary', `data-id="${id}" data-kind="confirm"`)}${btn('Lembrete pelo WhatsApp', 'wa-appointment', 'bell', 'secondary', `data-id="${id}" data-kind="reminder"`)}${btn('Remarcar', 'reschedule', 'calendar', 'secondary', `data-id="${id}"`)}${btn('Concluir atendimento', 'new-record', 'scissors', 'secondary', `data-appointment="${id}"`)}</div>`, 'Salvar situação', id);
+    openForm('Detalhes do atendimento', 'appointment-status', `<div class="row full">${avatar(client(a.clientId))}<div><h3>${esc(client(a.clientId).name)}</h3><p class="muted small" style="margin-top:7px">${esc(service(a.serviceId).name)}</p></div></div><div class="notice full">${longDate(a.date)} · ${a.time} — ${clock(minutes(a.time) + a.duration)}<br>+ ${a.buffer} min de intervalo reservado</div>` + selectField('Situação confirmada por você', 'status', Object.entries(statusLabel).filter(([k]) => !['blocked', 'completed'].includes(k)), a.status, '', true) + textfield('Observações', 'note', a.note, 'maxlength="2000"') + `<div class="full row wrap">${btn('Confirmar pelo WhatsApp', 'wa-appointment', 'chat', 'secondary', `data-id="${id}" data-kind="confirm"`)}${btn('Lembrete pelo WhatsApp', 'wa-appointment', 'bell', 'secondary', `data-id="${id}" data-kind="reminder"`)}${btn('Editar agendamento', 'v15-edit-appointment', 'edit', 'secondary', `data-id="${id}"`)}${btn('Remarcar', 'reschedule', 'calendar', 'secondary', `data-id="${id}"`)}${btn('Concluir atendimento', 'new-record', 'scissors', 'secondary', `data-appointment="${id}"`)}</div>`, 'Salvar situação', id);
 }
 /**
  * reschedule — Abre alteração de data e horário sem criar outro compromisso.
@@ -690,7 +690,7 @@ function reschedule(id) {
 /**
  * serviceForm — Abre edição dos dados técnicos e do tempo de um serviço.
  */
-function serviceForm(id) { const s = state.services.find(s => s.id === id); openForm(s ? 'Detalhes do cuidado' : 'Novo serviço', 'service', field('Nome do serviço', 'name', s?.name || '', 'text', 'required maxlength="120"', true) + textfield('Descrição', 'description', s?.description || '', 'required maxlength="2000"') + field('Duração (min)', 'duration', s?.duration || 60, 'number', 'required min="15" max="600" step="5"') + field('Intervalo após (min)', 'buffer', s?.buffer ?? 15, 'number', 'required min="0" max="120" step="5"') + textfield('Produtos utilizados', 'products', s?.products || '', 'maxlength="2000"') + textfield('Orientações anteriores', 'before', s?.before || '', 'maxlength="2000"') + textfield('Orientações posteriores', 'after', s?.after || '', 'maxlength="2000"') + `<div class="full"><span class="small">Campos obrigatórios na ficha técnica</span><div class="weekday-checks">${['Fórmula e cor', 'Produtos utilizados', 'Observações técnicas'].map(t => `<label><input type="checkbox" name="requiredFields" value="${t}" ${s?.required?.toLowerCase().includes(t.toLowerCase().split(' ')[0]) ? 'checked' : ''}>${t}</label>`).join('')}</div></div>` + '<div class="notice full">Alterar duração e intervalo vale para novos agendamentos. Os já registrados preservam os tempos originais.</div>', 'Salvar serviço', id || '', true); }
+function serviceForm(id) { const s = state.services.find(s => s.id === id); openForm(s ? 'Detalhes do cuidado' : 'Novo serviço', 'service', field('Nome do serviço', 'name', s?.name || '', 'text', 'required maxlength="120"', true) + textfield('Descrição', 'description', s?.description || '', 'required maxlength="2000"') + field('Duração (min)', 'duration', s?.duration || 60, 'number', 'required min="15" max="600" step="5"') + field('Intervalo após (min)', 'buffer', s?.buffer ?? 15, 'number', 'required min="0" max="120" step="5"') + textfield('Produtos utilizados', 'products', s?.products || '', 'maxlength="2000"') + textfield('Orientações anteriores', 'before', s?.before || '', 'maxlength="2000"') + textfield('Orientações posteriores', 'after', s?.after || '', 'maxlength="2000"') + `<div class="full"><span class="small">Campos obrigatórios na ficha técnica</span><div class="weekday-checks">${['Fórmula e cor', 'Produtos utilizados', 'Observações técnicas'].map(t => `<label><input type="checkbox" name="requiredFields" value="${t}" ${s?.required?.toLowerCase().includes(t.toLowerCase().split(' ')[0]) ? 'checked' : ''}>${t}</label>`).join('')}</div></div>` + '<div class="notice full">Alterar duração e intervalo vale para novos agendamentos. Os já registrados preservam os tempos originais.</div>', 'Salvar serviço', id || '', true); if (s) addFooterDelete('services', id, 'Excluir serviço'); }
 /**
  * updateRecordRequired — Ajusta campos técnicos obrigatórios do formulário legado de ficha; o fechamento atual usa o fluxo em etapas.
  */
@@ -713,6 +713,7 @@ function quoteForm(id) {
     const q = state.quotes.find(q => q.id === id);
     quotePhotos = [...(q?.photos || [])];
     openForm(q ? 'Avaliar solicitação' : 'Novo orçamento', 'quote', clientPicker('Cliente', q?.clientId || state.clients[0]?.id, { extra: 'required', full: false }) + selectField('Serviço solicitado', 'serviceId', serviceOptions(), q?.serviceId || state.services[0]?.id, 'required') + selectField('Etapa da avaliação', 'status', Object.entries(quoteLabel), q?.status || 'review', 'required') + field('Valor definido por você (R$)', 'value', q?.value ?? '', 'number', 'min="0.01" max="100000" step="0.01"') + textfield('Contexto, histórico e informações ausentes', 'notes', q?.notes || '', 'maxlength="3000"') + textfield('Perguntas para revisar e copiar', 'question', q?.question || '', 'maxlength="3000"') + `<div class="full"><label class="field"><span>Fotos associadas manualmente</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple data-change="quote-photos"><small>Até 3 fotos, com no máximo 500 KB cada. Sem análise visual.</small></label><div class="photos" id="quote-photos">${photoMarkup()}</div></div>` + '<div class="notice full">Salvar registra sua avaliação. Nenhuma proposta ou pergunta é enviada à cliente. Copie o texto revisado para usar no seu canal de atendimento.</div>', 'Salvar avaliação', id || '', true);
+    if (q) addFooterDelete('quotes', id, 'Excluir orçamento');
     document.querySelector('dialog .dialog-footer').insertAdjacentHTML('afterbegin', (q?.question ? btn('Copiar perguntas', 'copy-question', 'copy', 'secondary') : '') + btn('Perguntas pelo WhatsApp', 'wa-quote', 'chat', 'secondary'));
 }
 /**
@@ -726,7 +727,7 @@ function billForm() { openForm('Novo lançamento', 'bill', clientPicker('Cliente
 /**
  * taskForm — Abre cadastro ou edição de tarefa interna.
  */
-function taskForm(id) { const t = state.tasks.find(t => t.id === id); openForm(t ? 'Cuidar desta tarefa' : 'Uma nova tarefa', 'task', field('O que precisa ser feito?', 'title', t?.title || '', 'text', 'required maxlength="180"', true) + selectField('Área', 'area', ['Atendimento', 'Agenda', 'Clientes', 'Financeiro', 'Operação'].map(t => [t, t]), t?.area || 'Atendimento', 'required') + selectField('Prioridade', 'priority', ['Alta', 'Média', 'Baixa'].map(t => [t, t]), t?.priority || 'Média', 'required') + field('Prazo', 'due', t?.due || localDate(), 'date', 'required') + clientPicker('Cliente relacionado', t?.clientId || '', { placeholder: 'Nenhum', full: false }), 'Salvar tarefa', id || ''); }
+function taskForm(id) { const t = state.tasks.find(t => t.id === id); openForm(t ? 'Cuidar desta tarefa' : 'Uma nova tarefa', 'task', field('O que precisa ser feito?', 'title', t?.title || '', 'text', 'required maxlength="180"', true) + selectField('Área', 'area', ['Atendimento', 'Agenda', 'Clientes', 'Financeiro', 'Operação'].map(t => [t, t]), t?.area || 'Atendimento', 'required') + selectField('Prioridade', 'priority', ['Alta', 'Média', 'Baixa'].map(t => [t, t]), t?.priority || 'Média', 'required') + field('Prazo', 'due', t?.due || localDate(), 'date', 'required') + clientPicker('Cliente relacionado', t?.clientId || '', { placeholder: 'Nenhum', full: false }), 'Salvar tarefa', id || ''); if (t) addFooterDelete('tasks', id, 'Excluir tarefa'); }
 /**
  * reviewDraft — Permite revisar um texto de resposta antes de copiá-lo; não envia mensagens.
  */
@@ -1801,7 +1802,7 @@ function inventoryPage() {
     const { from, to } = viewPeriod(), products = state.products.filter(p => { const st = stockOf(state, p.id); return ui.inventoryScope === 'low' ? st.quantity <= p.minimum : ui.inventoryScope === 'unknown' ? st.quantity > 0 && st.unitCost === null : true; });
     const moves = [...state.movements].reverse().filter(m => ui.inventoryScope !== 'consumption' || m.type === 'consumption' && m.date >= from && m.date <= to);
     const scope = { low: 'Produtos com estoque baixo', unknown: 'Produtos com custo a conferir', consumption: 'Consumo dos atendimentos no período selecionado' }[ui.inventoryScope];
-    const body = ui.inventoryTab === 'products' ? table(['Produto', 'Saldo', 'Custo por unidade', 'Estoque mínimo', ''], products.map(p => { const st = stockOf(state, p.id), target = { page: 'inventory', product: p.id }; return `<tr><td>${destinationLink(esc(p.name), target, 'name-link')}<p class="table-sub">${esc(p.brand || 'Sem marca informada')} · embalagem ${stockNumber(p.packageSize)} ${p.unit}</p></td><td>${destinationLink(stockNumber(st.quantity) + ' ' + p.unit, target, 'money-link')}${st.quantity <= p.minimum ? `<p class="table-sub">${pill('Repor', 'orange')}</p>` : ''}</td><td>${st.unitCost === null ? pill('Custo pendente', 'orange') : moneyPrecise(st.unitCost) + ' / ' + p.unit}</td><td>${stockNumber(p.minimum)} ${p.unit}</td><td>${destinationLink('Detalhes ' + icon('arrow'), target, 'btn text')}</td></tr>`; }), 'Nenhum produto corresponde a esta consulta.') : table(['Data', 'Produto', 'Movimento', 'Quantidade', 'Custo registrado'], moves.map(m => { const p = state.products.find(p => p.id === m.productId), target = m.recordId ? { page: 'services', record: m.recordId } : m.expenseId ? { page: 'finance', expense: m.expenseId } : { page: 'inventory', product: m.productId }; return `<tr><td>${destinationLink(fmt(m.date), target, 'date-link')}</td><td>${destinationLink(esc(p.name), { page: 'inventory', product: p.id }, 'name-link')}</td><td>${destinationLink({ opening: 'Estoque inicial', purchase: 'Compra', consumption: 'Atendimento', loss: 'Perda', valuation: 'Custo conferido' }[m.type], target, 'name-link')}<p class="table-sub">${esc(m.note || '')}</p></td><td>${m.type === 'valuation' ? '—' : stockNumber(m.quantity) + ' ' + p.unit}</td><td>${m.unitCost === null ? 'A conferir' : moneyPrecise(m.unitCost) + ' / ' + p.unit}</td></tr>`; }), 'Nenhuma movimentação corresponde a esta consulta.');
+    const body = ui.inventoryTab === 'products' ? table(['Produto', 'Saldo', 'Custo por unidade', 'Estoque mínimo', ''], products.map(p => { const st = stockOf(state, p.id), target = { page: 'inventory', product: p.id }; return `<tr><td>${destinationLink(esc(p.name), target, 'name-link')}<p class="table-sub">${esc(p.brand || 'Sem marca informada')} · embalagem ${stockNumber(p.packageSize)} ${p.unit}</p></td><td>${destinationLink(stockNumber(st.quantity) + ' ' + p.unit, target, 'money-link')}${st.quantity <= p.minimum ? `<p class="table-sub">${pill('Repor', 'orange')}</p>` : ''}</td><td>${st.unitCost === null ? pill('Custo pendente', 'orange') : moneyPrecise(st.unitCost) + ' / ' + p.unit}</td><td>${stockNumber(p.minimum)} ${p.unit}</td><td>${destinationLink('Detalhes ' + icon('arrow'), target, 'btn text')}</td></tr>`; }), 'Nenhum produto corresponde a esta consulta.') : table(['Data', 'Produto', 'Movimento', 'Quantidade', 'Custo registrado', ''], moves.map(m => { const p = state.products.find(p => p.id === m.productId), target = m.recordId ? { page: 'services', record: m.recordId } : m.expenseId ? { page: 'finance', expense: m.expenseId } : { page: 'inventory', product: m.productId }; return `<tr><td>${destinationLink(fmt(m.date), target, 'date-link')}</td><td>${destinationLink(esc(p.name), { page: 'inventory', product: p.id }, 'name-link')}</td><td>${destinationLink({ opening: 'Estoque inicial', purchase: 'Compra', consumption: 'Atendimento', loss: 'Perda', valuation: 'Custo conferido' }[m.type], target, 'name-link')}<p class="table-sub">${esc(m.note || '')}</p></td><td>${m.type === 'valuation' ? '—' : stockNumber(m.quantity) + ' ' + p.unit}</td><td>${m.unitCost === null ? 'A conferir' : moneyPrecise(m.unitCost) + ' / ' + p.unit}</td><td>${iconBtn('edit', 'v15-edit-movement', 'Editar ou excluir movimento', `data-id="${esc(m.id)}"`)}</td></tr>`; }), 'Nenhuma movimentação corresponde a esta consulta.');
     return `${heading('Estoque', 'Veja o saldo dos produtos e abra o atendimento ou a compra de origem.', btn('Registrar compra', 'v2-purchase', 'plus', 'secondary') + btn('Cadastrar produto', 'v2-product', 'plus', 'primary'))}${setupNotice()}<div class="stats inventory-stats">${stat('Produtos cadastrados', total, 'Marcas e tonalidades em itens separados', 'leaf')}${stat('Estoque baixo', low, 'Saldo igual ou abaixo do mínimo configurado', 'warning')}${stat('Custos a conferir', missing, 'Produtos com saldo e custo desconhecido', 'file')}</div><div class="toolbar"><div class="segmented">${[['products', 'Produtos'], ['movements', 'Movimentações']].map(([id, label]) => `<button data-action="v2-stock-tab" data-id="${id}" aria-pressed="${ui.inventoryTab === id}" class="${ui.inventoryTab === id ? 'active' : ''}">${label}</button>`).join('')}</div>${btn('Exportar estoque', 'v2-stock-export', 'download', 'secondary')}</div><section class="card">${scope ? `<div class="consultation-banner"><span>${scope}</span>${destinationLink('Ver todos', { page: 'inventory', tab: ui.inventoryTab }, 'btn text')}</div>` : ''}${body}</section><div class="notice section-gap">${icon('shield')}Toque em Atendimento para abrir a ficha, em Compra para ver a despesa ou no produto para consultar seu estoque. O custo permanece registrado no momento do consumo.</div>`;
 }
 /**
@@ -1902,12 +1903,75 @@ function purchaseForm(productId) {
 /**
  * productDetail — Exibe saldo, custo e histórico de movimentos do produto.
  */
+
+/* ---------- Edição e exclusão de qualquer registro ---------- */
+/** Botão de exclusão no rodapé da janela aberta; a exclusão pede confirmação dos vínculos e a senha da conta. */
+const deleteBtn = (collection, id, label = 'Excluir') => btn(label, 'v12-delete-confirm', 'close', 'danger', `data-collection="${collection}" data-id="${esc(id)}"`);
+function addFooterDelete(collection, id, label) { const footer = document.querySelector('#dialog .dialog-footer'); if (footer && id) footer.insertAdjacentHTML('afterbegin', `<span class="footer-delete">${deleteBtn(collection, id, label)}</span>`); }
+const movementName = { opening: 'Estoque inicial', purchase: 'Compra', consumption: 'Consumo em atendimento', loss: 'Perda', valuation: 'Custo conferido' };
+/** Cobrança: descrição e datas sempre; valor quando não vem de atendimento (lá o preço é corrigido na ficha). */
+function billEditForm(id) {
+    const b = state.bills.find(b => b.id === id);
+    if (!b) return;
+    const paid = billPaid(state, id);
+    openForm('Editar cobrança', 'v2-edit-bill', `<div class="notice full">${esc(client(b.clientId).name)}${paid ? ` · já pago ${money(paid)}` : ''}</div>` + field('Descrição', 'description', b.description, 'text', 'required maxlength="160"', true) + (b.recordId ? `<div class="notice full">O valor desta cobrança vem do atendimento. Corrija o preço em ${destinationLink('Editar ficha do atendimento', { page: 'services', record: b.recordId }, 'name-link')}.</div>` : field('Valor total (R$)', 'total', b.total, 'number', `required min="${Math.max(0.01, paid)}" max="100000" step="0.01"`)) + field('Data do serviço', 'date', b.date, 'date', 'required') + field('Vencimento', 'due', b.due, 'date', 'required', !b.recordId), 'Salvar correção', id);
+    addFooterDelete('bills', id);
+}
+/** Pagamento ou sinal: valor, forma e data quando não é cartão (cartão gera parcelas e repasses). */
+function paymentEditForm(id) {
+    const p = state.payments.find(p => p.id === id);
+    if (!p) return;
+    if (cardMethod(p.method)) { modal('Corrigir pagamento no cartão', `<div class="dialog-body"><p>${esc(client(p.clientId).name)} · ${esc(p.method)} · ${money(p.amount)} em ${fmt(p.date)}</p><p class="notice">Pagamentos no cartão geram parcelas e repasses. Para corrigir valor, forma ou data, exclua este pagamento e registre de novo.</p></div>`, deleteBtn('payments', id, 'Excluir pagamento') + btn('Fechar', 'close-modal')); return; }
+    const methods = p.isOpening ? [[p.method, p.method]] : METHODS.filter(m => !cardMethod(m)).map(m => [m, m]);
+    openForm(p.kind === 'Sinal' ? 'Editar sinal' : 'Editar pagamento', 'v2-edit-payment', `<div class="notice full">${esc(client(p.clientId).name)}${p.billId ? ' · ' + esc(state.bills.find(b => b.id === p.billId)?.description || '') : ''}</div>` + field('Valor (R$)', 'amount', p.amount, 'number', 'required min="0.01" max="100000" step="0.01"') + field('Data', 'date', p.date, 'date', `required max="${localDate()}"`) + selectField('Forma de pagamento', 'method', methods, p.method, 'required', true) + (p.isOpening ? '<div class="notice full">Saldo anterior ao início: a forma não muda.</div>' : '<div class="notice full">Para trocar para cartão, exclua e registre de novo.</div>'), 'Salvar correção', id);
+    addFooterDelete('payments', id);
+}
+/** Despesa: tudo editável; o valor de compra de produto é corrigido pela entrada de estoque. */
+function expenseEditForm(id) {
+    const e = state.expenses.find(e => e.id === id);
+    if (!e) return;
+    const move = state.movements.find(m => m.expenseId === id);
+    openForm('Editar despesa', 'v2-edit-expense', field('Descrição', 'description', e.description, 'text', 'required maxlength="160"', true) + (e.category === 'products' ? '<input type="hidden" name="category" value="products">' : selectField('Categoria', 'category', [['space', 'Aluguel / contas do espaço'], ['disposables', 'Descartáveis']], e.category, 'required', true)) + (move ? `<div class="notice full">Valor ${money(e.amount)} vem da compra no estoque. Corrija quantidade e valor em ${btn('Editar compra', 'v15-edit-movement', 'edit', 'text', `data-id="${esc(move.id)}"`)}</div>` : field('Valor (R$)', 'amount', e.amount, 'number', 'required min="0.01" max="100000" step="0.01"')) + field('Data da despesa', 'date', e.date, 'date', 'required') + field('Vencimento', 'due', e.due, 'date', 'required') + field('Data de pagamento (vazio se pendente)', 'paidDate', e.paidDate || '', 'date', `max="${localDate()}"`, true), 'Salvar correção', id);
+    addFooterDelete('expenses', id);
+}
+/** Produto: nome, marca, embalagem e mínimo. A unidade não muda, pois todo o histórico foi medido nela. */
+function productEditForm(id) {
+    const p = state.products.find(p => p.id === id);
+    if (!p) return;
+    openForm('Editar produto', 'v2-edit-product', field('Produto / tonalidade', 'name', p.name, 'text', 'required maxlength="120"', true) + field('Marca (opcional)', 'brand', p.brand || '', 'text', 'maxlength="80"', true) + field(`Tamanho de uma embalagem (${p.unit})`, 'packageSize', p.packageSize, 'number', 'required min="0.001" max="1000000" step="0.001"') + field(`Estoque mínimo para aviso (${p.unit})`, 'minimum', p.minimum, 'number', 'required min="0" max="1000000" step="0.001"') + `<div class="notice full">A unidade (${p.unit}) não pode ser trocada, porque todo o histórico foi medido nela. Para corrigir quantidades, edite o movimento de estoque.</div>`, 'Salvar correção', id);
+    addFooterDelete('products', id, 'Excluir produto');
+}
+/** Movimento de estoque. Consumo de atendimento só aceita observação; demais correções passam pela conferência completa do estoque. */
+function movementEditForm(id) {
+    const m = state.movements.find(m => m.id === id), p = m && state.products.find(p => p.id === m.productId);
+    if (!m || !p) return;
+    const total = m.unitCost === null ? '' : Math.round(m.quantity * m.unitCost * 100) / 100;
+    let body = `<div class="notice full">${esc(p.name)} · ${movementName[m.type]} em ${fmt(m.date)}</div>`;
+    if (m.type === 'consumption') body += `<div class="notice full">Quantidade e custo do consumo vêm do atendimento. Para refazer, exclua o atendimento e registre de novo.</div>`;
+    else {
+        if (m.type !== 'valuation') body += field(`Quantidade (${p.unit})`, 'quantity', Math.abs(m.quantity), 'number', 'required min="0.001" max="1000000" step="0.001"');
+        if (m.type === 'purchase') body += field('Valor total da compra (R$)', 'total', total, 'number', 'required min="0.01" max="100000" step="0.01"');
+        if (m.type === 'opening') body += field(`Custo por ${p.unit} (R$, vazio se desconhecido)`, 'unitCost', m.unitCost ?? '', 'number', 'min="0" max="100000" step="0.000001"');
+        if (m.type === 'valuation') body += field(`Custo por ${p.unit} (R$)`, 'unitCost', m.unitCost ?? '', 'number', 'required min="0.000001" max="100000" step="0.000001"');
+        body += field('Data', 'date', m.date, 'date', `required max="${localDate()}"`);
+    }
+    body += textfield('Observação', 'note', m.note || '', 'maxlength="500"') + (m.type !== 'consumption' ? '<div class="notice full">O estoque e o custo médio são recalculados. Se houver saídas depois deste movimento que dependam dele, o sistema avisa e sugere excluir e lançar de novo.</div>' : '');
+    openForm('Editar movimento de estoque', 'v2-edit-movement', body, 'Salvar correção', id);
+    if (m.type !== 'consumption') addFooterDelete('movements', id);
+}
+/** Agendamento ainda não concluído: cliente, serviço, data, horário, duração e observações. */
+function appointmentEditForm(id) {
+    const a = state.appointments.find(a => a.id === id);
+    if (!a || a.status === 'completed' || a.status === 'blocked') return;
+    openForm('Editar agendamento', 'v2-edit-appointment', clientPicker('Cliente', a.clientId, { extra: 'required' }) + selectField('Serviço', 'serviceId', serviceOptions(), a.serviceId, 'required', true) + field('Data', 'date', a.date, 'date', 'required') + field('Horário', 'time', a.time, 'time', 'required') + field('Duração (min)', 'duration', a.duration, 'number', 'required min="15" max="600" step="5"') + field('Intervalo após (min)', 'buffer', a.buffer, 'number', 'required min="0" max="120" step="5"') + textfield('Observações', 'note', a.note || '', 'maxlength="2000"') + '<div class="notice full">Horários de funcionamento, folgas e conflitos são conferidos de novo. Nenhuma mensagem é enviada à cliente.</div>', 'Salvar correção', id);
+    addFooterDelete('appointments', id);
+}
 function productDetail(id) {
     const p = state.products.find(p => p.id === id);
     if (!p)
         return;
     const s = stockOf(state, id);
-    modal(p.name, `<div class="dialog-body"><p class="muted small">${esc(p.brand)} · embalagem ${stockNumber(p.packageSize)} ${p.unit}</p><div class="detail-metrics two section-gap"><div><span>Disponível</span><strong>${stockNumber(s.quantity)} ${p.unit}</strong></div><div><span>Custo médio atual</span><strong>${s.unitCost === null ? 'A conferir' : moneyPrecise(s.unitCost)}</strong><small>por ${p.unit}</small></div></div><h3 class="section-gap">Últimos movimentos</h3>${state.movements.filter(m => m.productId === id).slice(-6).reverse().map(m => `<div class="audit-row">${fmt(m.date)} · ${{ opening: 'Estoque inicial', purchase: 'Compra', consumption: 'Consumo em atendimento', loss: 'Perda', valuation: 'Custo conferido' }[m.type]}<time>${stockNumber(m.quantity)} ${p.unit} · ${esc(m.note)}</time></div>`).join('')}</div>`, btn('Registrar perda', 'v2-loss', 'warning', 'secondary', `data-id="${id}"`) + btn('Conferir custo', 'v2-value', 'edit', 'secondary', `data-id="${id}"`) + btn('Nova compra', 'v2-purchase', 'plus', 'primary', `data-id="${id}"`), true);
+    modal(p.name, `<div class="dialog-body"><p class="muted small">${esc(p.brand)} · embalagem ${stockNumber(p.packageSize)} ${p.unit}</p><div class="detail-metrics two section-gap"><div><span>Disponível</span><strong>${stockNumber(s.quantity)} ${p.unit}</strong></div><div><span>Custo médio atual</span><strong>${s.unitCost === null ? 'A conferir' : moneyPrecise(s.unitCost)}</strong><small>por ${p.unit}</small></div></div><h3 class="section-gap">Últimos movimentos</h3>${state.movements.filter(m => m.productId === id).slice(-6).reverse().map(m => `<div class="audit-row">${fmt(m.date)} · ${{ opening: 'Estoque inicial', purchase: 'Compra', consumption: 'Consumo em atendimento', loss: 'Perda', valuation: 'Custo conferido' }[m.type]}<time>${stockNumber(m.quantity)} ${p.unit} · ${esc(m.note)}</time>${iconBtn('edit', 'v15-edit-movement', 'Editar ou excluir este movimento', `data-id="${esc(m.id)}"`)}</div>`).join('')}</div>`, `<span class="footer-delete">${deleteBtn('products', id, 'Excluir produto')}</span>` + btn('Editar produto', 'v15-edit-product', 'edit', 'secondary', `data-id="${id}"`) + btn('Registrar perda', 'v2-loss', 'warning', 'secondary', `data-id="${id}"`) + btn('Conferir custo', 'v2-value', 'edit', 'secondary', `data-id="${id}"`) + btn('Nova compra', 'v2-purchase', 'plus', 'primary', `data-id="${id}"`), true);
 }
 /**
  * movementForm — Abre perda de estoque ou conferência de custo, sem reescrever o histórico.
@@ -1987,7 +2051,8 @@ function recordForm(id) {
     if (!r)
         return;
     const moves = state.movements.filter(m => m.recordId === id);
-    openForm('Ficha do atendimento', 'v2-record', `<div class="related-links full">${destinationLink('Ver cobrança e pagamentos', { page: 'finance', bill: r.billId }, 'btn secondary')}${r.appointmentId ? destinationLink('Ver agendamento', { page: 'agenda', appointment: r.appointmentId }, 'btn secondary') : ''}</div><div class="notice full">${esc(client(r.clientId).name)} · ${fmt(r.date)}<br>${esc(r.serviceIds.map(id => service(id).name).join(' + '))}<br>Preço total ${money(r.total)}</div><div class="full">${moves.map(m => { const p = state.products.find(p => p.id === m.productId); return `<p class="small" style="margin-bottom:8px">${esc(p.name)} · ${stockNumber(-m.quantity)} ${p.unit} · ${m.unitCost === null ? 'custo desconhecido' : money(-m.quantity * m.unitCost)}</p>`; }).join('') || '<p class="small muted">Sem consumo de produtos, confirmado no fechamento.</p>'}</div>` + textfield('Fórmula e cor', 'formula', r.formula, 'maxlength="2000"') + textfield('Observações técnicas', 'notes', r.notes, 'maxlength="3000"') + field('Manutenção recomendada', 'followup', r.followup || '', 'date', '', true), 'Salvar observações', id, true);
+    openForm('Ficha do atendimento', 'v2-record', `<div class="related-links full">${destinationLink('Ver cobrança e pagamentos', { page: 'finance', bill: r.billId }, 'btn secondary')}${r.appointmentId ? destinationLink('Ver agendamento', { page: 'agenda', appointment: r.appointmentId }, 'btn secondary') : ''}</div><div class="notice full">${esc(client(r.clientId).name)} · ${fmt(r.date)}<br>${esc(r.serviceIds.map(id => service(id).name).join(' + '))}<br>Preço total ${money(r.total)}</div><div class="full">${moves.map(m => { const p = state.products.find(p => p.id === m.productId); return `<p class="small" style="margin-bottom:8px">${esc(p.name)} · ${stockNumber(-m.quantity)} ${p.unit} · ${m.unitCost === null ? 'custo desconhecido' : money(-m.quantity * m.unitCost)}</p>`; }).join('') || '<p class="small muted">Sem consumo de produtos, confirmado no fechamento.</p>'}</div>` + `<div class="full"><label class="field"><span>Serviços realizados</span></label><div class="service-checks">${state.services.map(s => `<label><input type="checkbox" name="serviceIds" value="${s.id}" ${r.serviceIds.includes(s.id) ? 'checked' : ''}><span>${esc(s.name)}</span></label>`).join('')}</div></div>` + field('Preço total combinado (R$)', 'total', r.total, 'number', `required min="${Math.max(0.01, billPaid(state, r.billId))}" max="100000" step="0.01"`, true) + textfield('Fórmula e cor', 'formula', r.formula, 'maxlength="2000"') + textfield('Observações técnicas', 'notes', r.notes, 'maxlength="3000"') + field('Manutenção recomendada', 'followup', r.followup || '', 'date', '', true) + '<div class="notice full">Cliente, data e produtos usados não mudam aqui. Para corrigi-los, exclua o atendimento e registre de novo. O estoque e o financeiro voltam ao que eram.</div>', 'Salvar correção', id, true);
+    addFooterDelete('records', id, 'Excluir atendimento');
 }
 // Etapa atual do formulário de fechamento; ainda não confirma registros.
 let finishStep = 0;
@@ -2239,6 +2304,12 @@ document.addEventListener('click', e => {
         purchaseForm(id);
     if (a === 'v2-product-detail')
         productDetail(id);
+    if (a === 'v15-edit-bill') billEditForm(id);
+    if (a === 'v15-edit-payment') paymentEditForm(id);
+    if (a === 'v15-edit-expense') expenseEditForm(id);
+    if (a === 'v15-edit-product') productEditForm(id);
+    if (a === 'v15-edit-movement') movementEditForm(id);
+    if (a === 'v15-edit-appointment') appointmentEditForm(id);
     if (a === 'v2-loss')
         movementForm(id, 'loss');
     if (a === 'v2-value')
@@ -2478,11 +2549,17 @@ document.addEventListener('submit', e => {
                 throw Error('Atendimento não encontrado.');
             if (v('followup') && v('followup') < r.date)
                 throw Error('A manutenção precisa ser após o atendimento.');
+            const serviceIds = fd.getAll('serviceIds'), total = amount(cents(Number(v('total')))), bill = next.bills.find(b => b.id === r.billId);
+            if (!serviceIds.length) throw Error('Marque ao menos um serviço realizado.');
+            if (!(total > 0)) throw Error('Informe o preço total.');
+            if (cents(total) < cents(billPaid(next, r.billId))) throw Error(`O preço não pode ficar menor que o já pago (${money(billPaid(next, r.billId))}).`);
             r.formula = v('formula');
             r.notes = v('notes');
             r.followup = v('followup');
-            action = 'Observações da ficha técnica revisadas';
-            message = 'Ficha técnica atualizada; valores e consumo preservados.';
+            r.serviceIds = [...new Set(serviceIds)]; r.serviceId = r.serviceIds[0]; r.total = total;
+            if (bill) { bill.total = total; bill.description = r.serviceIds.map(id => next.services.find(s => s.id === id).name).join(' + '); }
+            action = 'Ficha do atendimento corrigida';
+            message = 'Atendimento atualizado. Cobrança ajustada ao novo preço.';
         }
         // Conclui a visita inteira por closeAttendance, substituindo o estado apenas após validação.
         if (kind === 'v2-finish') {
@@ -2510,6 +2587,69 @@ document.addEventListener('submit', e => {
             next = closeAttendance(state, { id: uid(), appointmentId: v('appointmentId') || null, clientId: v('clientId'), serviceIds, date: v('date'), total: Number(v('total')), consumption, noProducts: fd.has('noProducts'), depositIds: fd.getAll('depositIds'), formula: v('formula'), notes: v('notes'), followup: v('followup'), due: v('due'), payment: value > 0 ? { value, method, count: cardMethod(method) ? Number(v('count')) : 1, firstDue: v('firstDue') || v('date'), feeTotal } : null });
             action = 'Atendimento finalizado com serviços, estoque e pagamento';
             message = 'Atendimento registrado. Estoque, financeiro e ranking atualizados.';
+        }
+        if (kind === 'v2-edit-bill') {
+            const b = next.bills.find(b => b.id === id);
+            if (!b) throw Error('Cobrança não encontrada.');
+            if (!validDate(v('date')) || !validDate(v('due'))) throw Error('Confira as datas.');
+            b.description = v('description'); b.date = v('date'); b.due = v('due');
+            if (!b.recordId) { const total = amount(cents(Number(v('total')))); if (!(total > 0)) throw Error('Informe o valor.'); if (cents(total) < cents(billPaid(next, id))) throw Error(`O valor não pode ficar menor que o já pago (${money(billPaid(next, id))}).`); b.total = total; }
+            action = 'Cobrança corrigida: ' + b.description; message = 'Cobrança corrigida.';
+        }
+        if (kind === 'v2-edit-payment') {
+            const p = next.payments.find(p => p.id === id);
+            if (!p) throw Error('Pagamento não encontrado.');
+            const value = amount(cents(Number(v('amount'))));
+            if (!(value > 0)) throw Error('Informe o valor.');
+            if (!validDate(v('date')) || v('date') > localDate() || (!p.isOpening && v('date') < next.settings.cutoff)) throw Error('Use uma data entre o início da operação e hoje.');
+            if (!p.isOpening && (cardMethod(v('method')) || !METHODS.includes(v('method')))) throw Error('Escolha uma forma de pagamento válida.');
+            p.amount = value; p.date = v('date'); if (!p.isOpening) p.method = v('method');
+            if (p.billId && cents(billPaid(next, p.billId)) > cents(next.bills.find(b => b.id === p.billId).total)) throw Error('Com esse valor, os pagamentos passariam do total da cobrança.');
+            action = 'Pagamento corrigido'; message = 'Pagamento corrigido. Saldos atualizados.';
+        }
+        if (kind === 'v2-edit-expense') {
+            const e = next.expenses.find(e => e.id === id);
+            if (!e) throw Error('Despesa não encontrada.');
+            if (!validDate(v('date')) || !validDate(v('due')) || (v('paidDate') && (!validDate(v('paidDate')) || v('paidDate') > localDate()))) throw Error('Confira as datas.');
+            e.description = v('description'); e.date = v('date'); e.due = v('due'); e.paidDate = v('paidDate') || null;
+            if (e.category !== 'products') e.category = ['space', 'disposables'].includes(v('category')) ? v('category') : e.category;
+            if (!next.movements.some(m => m.expenseId === id)) { const value = amount(cents(Number(v('amount')))); if (!(value > 0)) throw Error('Informe o valor.'); e.amount = value; }
+            action = 'Despesa corrigida: ' + e.description; message = 'Despesa corrigida.';
+        }
+        if (kind === 'v2-edit-product') {
+            const p = next.products.find(p => p.id === id);
+            if (!p) throw Error('Produto não encontrado.');
+            const size = Number(v('packageSize')), minimum = Number(v('minimum'));
+            if (!(size > 0) || !(minimum >= 0)) throw Error('Confira embalagem e estoque mínimo.');
+            p.name = v('name'); p.brand = v('brand'); p.packageSize = qty(size); p.minimum = qty(minimum);
+            action = 'Produto corrigido: ' + p.name; message = 'Produto corrigido.';
+        }
+        if (kind === 'v2-edit-movement') {
+            const m = next.movements.find(m => m.id === id);
+            if (!m) throw Error('Movimento não encontrado.');
+            m.note = v('note');
+            if (m.type !== 'consumption') {
+                if (!validDate(v('date')) || v('date') > localDate()) throw Error('Confira a data.');
+                m.date = v('date');
+                if (m.type !== 'valuation') { const q = qty(Number(v('quantity'))); if (!(q > 0)) throw Error('Informe a quantidade.'); m.quantity = m.type === 'loss' ? -q : q; }
+                if (m.type === 'purchase') { const total = amount(cents(Number(v('total')))); if (!(total > 0)) throw Error('Informe o valor da compra.'); m.unitCost = total / m.quantity; const e = next.expenses.find(e => e.id === m.expenseId); if (e) e.amount = total; }
+                if (m.type === 'opening') m.unitCost = v('unitCost') === '' ? null : Number(v('unitCost'));
+                if (m.type === 'valuation') { const c = Number(v('unitCost')); if (!(c > 0)) throw Error('Informe o custo.'); m.unitCost = c; }
+                // Saídas registram o custo médio do momento; uma perda corrigida acompanha o custo vigente.
+                try { validateState(next, state); }
+                catch (err) { throw Error(/custo|negativo|ordem/i.test(err.message) ? `Esta correção mudaria o estoque ou o custo de saídas registradas depois (${err.message.replace(/\.$/, '')}). Exclua o movimento e lance de novo.` : err.message); }
+            }
+            action = 'Movimento de estoque corrigido'; message = 'Estoque corrigido e recalculado.';
+        }
+        if (kind === 'v2-edit-appointment') {
+            const a = next.appointments.find(a => a.id === id);
+            if (!a || a.status === 'completed') throw Error('Agendamento não encontrado ou já concluído.');
+            const candidate = { ...a, clientId: v('clientId'), serviceId: v('serviceId'), date: v('date'), time: v('time'), duration: Number(v('duration')), buffer: Number(v('buffer')), note: v('note') };
+            if (!next.clients.some(c => c.id === candidate.clientId) || !next.services.some(s => s.id === candidate.serviceId)) throw Error('Escolha uma cliente e um serviço válidos.');
+            if (!['cancelled', 'absent'].includes(a.status)) validateBookingSlot(next, candidate, id);
+            Object.assign(a, candidate);
+            if (next.records.some(r => r.appointmentId === id)) throw Error('Este agendamento já tem atendimento registrado.');
+            action = 'Agendamento corrigido'; message = 'Agendamento corrigido. Nenhuma mensagem foi enviada.';
         }
         validateState(next, state);
         state = next;
@@ -2613,18 +2753,21 @@ document.addEventListener('click',async event=>{
  if(action==='v12-delete-list')return deletionList();
  if(action==='v12-delete-confirm')try{
   const plan=deletionPlan(state,collection,id);
-  modal('Confirmar exclusão definitiva',`<div class="dialog-body"><p><strong>${plan.entries.length} registro(s) serão apagados:</strong></p><ul>${plan.entries.map(x=>`<li>${esc(deletionLabels[x.collection]+': '+(state[x.collection]?.find(item=>item.id===x.id)?deletionName(x.collection,state[x.collection].find(item=>item.id===x.id)):x.label))}</li>`).join('')}</ul><p>Pagamentos e parcelas vinculados deixarão de compor os saldos. Consumos excluídos devolvem produtos ao estoque; ao excluir uma entrada, movimentos posteriores dependentes também são removidos. Isso não faz estorno bancário nem avisa a cliente. Mensagens reais do WhatsApp e credenciais de acesso são geridas separadamente. Um comprovante técnico da exclusão permanece no sistema.</p><label class="row"><input id="delete-agree" type="checkbox">Conferi a lista e quero excluir definitivamente.</label></div>`,btn('Manter registros','close-modal','','secondary')+btn('Excluir definitivamente','v12-delete-apply','','danger',`data-collection="${collection}" data-id="${esc(id)}"`));
+  modal('Confirmar exclusão definitiva',`<div class="dialog-body"><p><strong>${plan.entries.length} registro(s) serão apagados:</strong></p><ul>${plan.entries.map(x=>`<li>${esc(deletionLabels[x.collection]+': '+(state[x.collection]?.find(item=>item.id===x.id)?deletionName(x.collection,state[x.collection].find(item=>item.id===x.id)):x.label))}</li>`).join('')}</ul><p>Pagamentos e parcelas vinculados deixarão de compor os saldos. Consumos excluídos devolvem produtos ao estoque; ao excluir uma entrada, movimentos posteriores dependentes também são removidos. Isso não faz estorno bancário nem avisa a cliente. Mensagens reais do WhatsApp e credenciais de acesso são geridas separadamente. Um comprovante técnico da exclusão permanece no sistema.</p><label class="row"><input id="delete-agree" type="checkbox">Conferi a lista e quero excluir definitivamente.</label><label class="field delete-password"><span>Senha da conta (a mesma do login)</span><input id="delete-password" type="password" autocomplete="current-password" maxlength="200" placeholder="Digite sua senha para confirmar"><small>Só quem sabe a senha consegue excluir, mesmo com o app aberto em outro aparelho.</small></label><p id="delete-error" class="form-error" role="alert"></p></div>`,btn('Manter registros','close-modal','','secondary')+btn('Excluir definitivamente','v12-delete-apply','','danger',`data-collection="${collection}" data-id="${esc(id)}"`));
   document.querySelector('[data-action="close-modal"]')?.focus();
  }catch(e){toast(e.message);}
  if(action==='v12-delete-apply'){
-  if(!document.querySelector('#delete-agree')?.checked){toast('Marque a confirmação após conferir os vínculos.');return;}
+  const passwordInput=document.querySelector('#delete-password'),deleteError=document.querySelector('#delete-error'),password=passwordInput?.value||'';
+  if(deleteError)deleteError.textContent='';
+  if(!document.querySelector('#delete-agree')?.checked){if(deleteError)deleteError.textContent='Marque a confirmação após conferir os vínculos.';else toast('Marque a confirmação após conferir os vínculos.');return;}
+  if(!password){if(deleteError)deleteError.textContent='Digite a senha da conta para confirmar.';passwordInput?.focus();return;}
   button.disabled=true;button.textContent='Excluindo…';saving=true;
   try{
    const plan=deletionPlan(state,collection,id);
-   const response=await fetch(stateURL(),{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision,collection,id,confirmed:true,plan:JSON.stringify(plan.entries)})});
+   const response=await fetch(stateURL(),{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision,collection,id,confirmed:true,password,plan:JSON.stringify(plan.entries)})});
    const data=await response.json();if(!response.ok)throw Error(data.error);
    state=data.state;confirmedState=structuredClone(state);revision=data.revision;lastSavedAt=data.updatedAt;syncStatus='saved';closeModal(true);render();toast('Exclusão confirmada. Saldos e estoque atualizados.');
-  }catch(e){toast(e.message||'A exclusão não foi confirmada. Recarregue para conferir antes de tentar novamente.');button.disabled=false;button.textContent='Excluir definitivamente';}finally{saving=false;}
+  }catch(e){const msg=e.message||'A exclusão não foi confirmada. Recarregue para conferir antes de tentar novamente.';if(deleteError)deleteError.textContent=msg;else toast(msg);if(passwordInput){passwordInput.value='';passwordInput.focus();}button.disabled=false;button.textContent='Excluir definitivamente';}finally{saving=false;}
  }
 });
 
@@ -2647,3 +2790,6 @@ document.addEventListener('submit', e => {
     error.textContent = 'Salve a nova cliente ou volte para a lista antes de continuar.';
     open.querySelector('[name="quickClientName"]')?.focus();
 }, true);
+
+/** Enter na senha confirma a exclusão. */
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'delete-password') { e.preventDefault(); document.querySelector('#dialog [data-action="v12-delete-apply"]')?.click(); } });

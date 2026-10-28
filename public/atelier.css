@@ -891,3 +891,11 @@ button.demo-label:hover { color: var(--accent); }
 .wa-ctx-history summary { cursor: pointer; }
 .wa-ctx-history p { margin: 6px 0 0; white-space: pre-wrap; color: var(--muted); }
 .wa-ctx-empty { margin: 10px 0 4px; }
+
+/* Edição e exclusão */
+.dialog-footer .footer-delete { margin-right: auto; }
+.delete-password { margin-top: 16px; }
+.delete-password small { color: var(--muted); }
+#delete-error:empty { display: none; }
+.audit-row .icon-btn { margin-left: 8px; }
+@media (max-width: 640px) { .dialog-footer .footer-delete { margin-right: 0; width: 100%; order: 9; } .dialog-footer .footer-delete .btn { width: 100%; justify-content: center; } }
