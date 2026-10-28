@@ -1,0 +1,241 @@
+/**
+ * Hanne · camada "vidro de ateliê" (v18).
+ * Carregada por último: troca tokens de cor e a pintura das superfícies, sem mexer em layout ou regras de negócio.
+ * Vidro equilibrado: menu, barra do topo, janelas, cartões de destaque e gráficos. Tabelas e formulários ficam sólidos para leitura.
+ * Tema escuro quase preto; o roxo da marca fica nos destaques.
+ */
+
+/* ---------- Tokens ---------- */
+:root {
+  --bg: #f2f1f7;
+  --paper: #ffffff;
+  --ink: #1e1b27;
+  --muted: #69647a;
+  --line: #e4e1ec;
+  --line-strong: #d6d1e2;
+  --surface: rgba(255, 255, 255, .78);
+  --surface-solid: #ffffff;
+  --surface-soft: #f5f3f9;
+  --surface-hover: #efebf7;
+  --sidebar: rgba(255, 255, 255, .6);
+  --accent: #6e43b3;
+  --accent-dark: #57309a;
+  --accent-soft: #efe9fa;
+  --primary: #6e43b3;
+  --primary-hover: #5d34a2;
+  --red: #b3354f;
+  --red-soft: #fcecef;
+  --green: #1f6b55;
+  --green-soft: #e6f3ee;
+  --focus-ring: #9c7ae0;
+  --hero: #2a1d3f;
+  --hero-muted: #d9cdef;
+  --radius: 16px;
+  --shadow: 0 1px 2px rgba(30, 20, 60, .04), 0 8px 24px -12px rgba(45, 25, 90, .12);
+
+  /* receita do vidro */
+  --glass-bg: linear-gradient(180deg, rgba(255, 255, 255, .74), rgba(255, 255, 255, .56));
+  --glass-edge: rgba(255, 255, 255, .78);
+  --glass-shine: inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 0 0 1px rgba(255, 255, 255, .25);
+  --glass-drop: 0 1px 1px rgba(30, 20, 60, .03), 0 18px 40px -22px rgba(60, 30, 120, .28);
+  --glass-blur: blur(22px) saturate(170%);
+
+  /* luz ambiente atrás do vidro */
+  --aura-1: rgba(140, 92, 230, .22);
+  --aura-2: rgba(236, 120, 160, .14);
+  --aura-3: rgba(90, 140, 240, .10);
+}
+:root[data-theme="dark"] {
+  --bg: #0e0d12;
+  --paper: #17151e;
+  --ink: #eeecf3;
+  --muted: #a29dae;
+  --line: #26232f;
+  --line-strong: #35313f;
+  --surface: rgba(23, 21, 30, .82);
+  --surface-solid: #17151e;
+  --surface-soft: #1d1a25;
+  --surface-hover: #24202e;
+  --sidebar: rgba(18, 16, 24, .6);
+  --accent: #b39af5;
+  --accent-dark: #cdbcff;
+  --accent-soft: rgba(150, 112, 236, .16);
+  --primary: #7650c9;
+  --primary-hover: #8661d6;
+  --red: #f290a4;
+  --red-soft: rgba(242, 144, 164, .12);
+  --green: #7fd3b5;
+  --green-soft: rgba(127, 211, 181, .12);
+  --focus-ring: #b39af5;
+  --hero: #17131f;
+  --hero-muted: #c9bde3;
+  --shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 12px 28px -16px rgba(0, 0, 0, .7);
+  --scroll-thumb: #3a3546;
+  --scroll-track: #121017;
+  --scroll-hover: #554d66;
+  --scroll-active: #7650c9;
+
+  --glass-bg: linear-gradient(180deg, rgba(34, 31, 45, .62), rgba(20, 18, 27, .52));
+  --glass-edge: rgba(255, 255, 255, .07);
+  --glass-shine: inset 0 1px 0 rgba(255, 255, 255, .08), inset 0 0 0 1px rgba(255, 255, 255, .02);
+  --glass-drop: 0 24px 48px -24px rgba(0, 0, 0, .8);
+  --glass-blur: blur(24px) saturate(150%);
+
+  --aura-1: rgba(118, 80, 201, .20);
+  --aura-2: rgba(200, 80, 140, .08);
+  --aura-3: rgba(60, 90, 200, .07);
+}
+
+/* ---------- Fundo com luz ambiente (dá o que o vidro refratar) ---------- */
+html { background: var(--bg); }
+html body {
+  background:
+    radial-gradient(900px 600px at 88% -8%, var(--aura-1), transparent 60%),
+    radial-gradient(700px 520px at -6% 92%, var(--aura-2), transparent 62%),
+    radial-gradient(600px 480px at 46% 52%, var(--aura-3), transparent 65%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--ink);
+}
+
+/* ---------- Receita do vidro ---------- */
+html .sidebar,
+html .topbar,
+html .mobile-bottom-nav,
+html dialog,
+html .search-modal,
+html .stat,
+html .attention-card,
+html .chart-card,
+html .dataset-banner {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-shine), var(--glass-drop);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+html .sidebar { border-width: 0 1px 0 0; box-shadow: var(--glass-shine); }
+html .topbar { border-width: 0 0 1px; box-shadow: none; }
+html .dataset-banner { border-radius: 14px; }
+html dialog { border-radius: 22px; }
+html dialog::backdrop { background: rgba(14, 10, 24, .32); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+:root[data-theme="dark"] dialog::backdrop { background: rgba(0, 0, 0, .55); }
+html dialog .dialog-head, html dialog .dialog-footer { background: transparent; border-color: var(--line); }
+/* Dentro da janela o conteúdo é lido: os campos ficam sólidos. */
+html dialog input, html dialog select, html dialog textarea { background: var(--surface-solid); }
+
+/* Cartões de leitura (tabelas, listas, formulários): sólidos, com borda fina e hierarquia de raio. */
+html .card { background: var(--surface-solid); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+html .card .card { box-shadow: none; }
+html .stat, html .attention-card, html .chart-card { border-radius: 18px; }
+
+/* Sem suporte ou com transparência reduzida: tudo sólido. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html .sidebar, html .topbar, html .mobile-bottom-nav, html dialog, html .search-modal, html .stat, html .attention-card, html .chart-card, html .dataset-banner { background: var(--surface-solid); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  html .sidebar, html .topbar, html .mobile-bottom-nav, html dialog, html .search-modal, html .stat, html .attention-card, html .chart-card, html .dataset-banner { background: var(--surface-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
+/* ---------- Navegação ---------- */
+html .nav-label { text-transform: none; letter-spacing: 0; font-size: 11px; font-weight: 600; color: var(--muted); opacity: .85; }
+html .brand-sub { text-transform: none; letter-spacing: 0; font-size: 11px; }
+html .nav button { color: var(--muted); border: 1px solid transparent; }
+html .nav button:hover { color: var(--ink); background: var(--surface-hover); }
+html .nav button.active {
+  color: var(--ink);
+  font-weight: 650;
+  background: var(--glass-bg);
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-shine), 0 6px 16px -10px rgba(80, 40, 160, .45);
+}
+html .nav button.active .icon { color: var(--accent); }
+html .nav button.active::after { background: var(--accent); }
+html .focus-box { background: transparent; border: 1px solid var(--line); }
+html .brand-mark { background: linear-gradient(145deg, #8a5ad6, #5b31a0); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 6px 14px -6px rgba(91, 49, 160, .7); }
+
+/* ---------- Botões e campos ---------- */
+html .btn { border-radius: 10px; }
+html .btn.primary {
+  color: #fff;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 86%, #fff), var(--primary));
+  border-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 1px 2px rgba(30, 10, 60, .2), 0 6px 16px -8px color-mix(in srgb, var(--primary) 80%, transparent);
+}
+html .btn.primary:hover { background: linear-gradient(180deg, color-mix(in srgb, var(--primary-hover) 86%, #fff), var(--primary-hover)); }
+html .btn.secondary { background: var(--surface-solid); border-color: var(--line-strong); color: var(--ink); box-shadow: 0 1px 1px rgba(20, 10, 40, .04); }
+html .btn.secondary:hover { background: var(--surface-hover); }
+html .btn.danger { background: transparent; color: var(--red); border-color: color-mix(in srgb, var(--red) 35%, transparent); }
+html .btn.danger:hover { background: var(--red-soft); }
+html input:not([type=checkbox]):not([type=radio]), html select, html textarea {
+  background: var(--surface-solid);
+  border-color: var(--line-strong);
+  color: var(--ink);
+  border-radius: 10px;
+}
+html input:not([type=checkbox]):not([type=radio]):focus, html select:focus, html textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+html .search-trigger { background: var(--surface-solid); border-color: var(--line); }
+html .theme-control { background: var(--surface-soft); border: 1px solid var(--line); }
+html .theme-control button.active, html .theme-control button[aria-pressed="true"] { background: var(--surface-solid); color: var(--ink); box-shadow: 0 1px 2px rgba(20, 10, 40, .12); }
+
+/* ---------- Tabelas ---------- */
+html .data-table th { color: var(--muted); font-weight: 600; text-transform: none; letter-spacing: 0; background: transparent; border-bottom: 1px solid var(--line); }
+html .data-table td { border-color: var(--line); }
+html .data-table tbody tr:hover { background: var(--surface-soft); }
+html .pill { border-radius: 999px; }
+
+/* ---------- Abertura do painel: o único lugar com luz forte ---------- */
+html .atelier-welcome {
+  background:
+    radial-gradient(520px 320px at 92% -10%, rgba(178, 132, 255, .55), transparent 60%),
+    radial-gradient(420px 300px at 10% 120%, rgba(236, 120, 170, .28), transparent 60%),
+    linear-gradient(135deg, #2c1b48, #1f1630 60%, #241a35);
+  border: 1px solid rgba(255, 255, 255, .08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 30px 60px -30px rgba(40, 15, 90, .65);
+  border-radius: 24px;
+}
+:root[data-theme="dark"] .atelier-welcome {
+  background:
+    radial-gradient(520px 320px at 92% -10%, rgba(150, 105, 240, .38), transparent 60%),
+    radial-gradient(420px 300px at 10% 120%, rgba(200, 80, 150, .14), transparent 60%),
+    linear-gradient(135deg, #1a1426, #121018 65%);
+  border-color: rgba(255, 255, 255, .06);
+}
+html .atelier-welcome::before { border-color: rgba(255, 255, 255, .06); }
+html .welcome-date { text-transform: none; letter-spacing: 0; font-size: 12px; }
+/* Painel "hoje" em vidro líquido sobre a luz da abertura. */
+html .welcome-day {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .05) 55%, rgba(255, 255, 255, .09));
+  border: 1px solid rgba(255, 255, 255, .22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), inset 0 -1px 0 rgba(255, 255, 255, .06), 0 20px 40px -24px rgba(0, 0, 0, .6);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+}
+html .welcome-actions .btn.primary { background: #fff; color: #3d2366; box-shadow: inset 0 -1px 0 rgba(60, 30, 110, .12), 0 8px 20px -10px rgba(0, 0, 0, .5); }
+html .welcome-actions .btn.secondary, html .welcome-actions .btn:not(.primary) { background: rgba(255, 255, 255, .08); color: #fff; border-color: rgba(255, 255, 255, .24); }
+
+/* ---------- Indicadores ---------- */
+html .stat-icon, html .attention-card-icon { background: var(--accent-soft); color: var(--accent); border-radius: 10px; }
+html .eyebrow { text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 600; }
+
+/* Título focado por navegação (tabindex=-1) não precisa de moldura. */
+h1[tabindex="-1"]:focus, h1[tabindex="-1"]:focus-visible { outline: none; }
+
+/* ---------- Tema escuro: ajustes finos de contraste ---------- */
+:root[data-theme="dark"] .table-sub, :root[data-theme="dark"] .muted { color: var(--muted); }
+:root[data-theme="dark"] .notice { background: var(--surface-soft); border-color: var(--line); color: var(--ink); }
+:root[data-theme="dark"] .btn.secondary { background: var(--surface-soft); border-color: var(--line-strong); }
+:root[data-theme="dark"] .btn.secondary:hover { background: var(--surface-hover); }
+:root[data-theme="dark"] .nav button.active { box-shadow: var(--glass-shine), 0 8px 20px -12px rgba(0, 0, 0, .9); }
+:root[data-theme="dark"] .fin-charts { --chart-grid: #221f2b; --chart-track: #221f2b; }
+:root[data-theme="dark"] .brand-mark { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 0 0 1px rgba(255, 255, 255, .06); }
+
+@media (prefers-reduced-motion: reduce) { html * { transition-duration: 0s !important; } }
+
+/* Campo de busca: o ícone não cobre o texto. */
+html .input-wrap input:not([type=checkbox]) { padding-left: 40px; }
+html .input-wrap .icon { top: 50%; left: 14px; transform: translateY(-50%); pointer-events: none; }
+/* Rótulos acima dos títulos em caixa normal, sem espaçamento largo. */
+html #main .eyebrow { text-transform: none; letter-spacing: 0; font-size: 12px; }
+:root[data-theme="dark"] .atelier-welcome::before { opacity: .35; }
+html .page-kicker { letter-spacing: 0; font-size: 12px; }
