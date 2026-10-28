@@ -859,3 +859,15 @@ button.demo-label:hover { color: var(--accent); }
 .quick-client-match:empty, .quick-client-error:empty { display: none; }
 .quick-client-error { padding: 0; }
 @media (max-width: 640px) { .quick-client-new .row > .btn { flex: 1; justify-content: center; } }
+
+/* Envio manual pelo WhatsApp (link wa.me) */
+.wa-dialog { width: min(560px, calc(100% - 22px)); }
+.wa-dialog .wa-recipient { margin-bottom: 18px; }
+.wa-dialog .wa-recipient h3 { margin: 0; }
+.wa-dialog .wa-recipient p { margin: 4px 0 0; }
+.wa-dialog textarea { min-height: 160px; }
+.wa-dialog .notice { margin: 16px 0 0; }
+.wa-phone-hint.error { color: var(--red); }
+.wa-dialog [data-action="wa-open"] { text-decoration: none; }
+.wa-dialog [data-action="wa-open"][aria-disabled="true"] { opacity: .55; cursor: not-allowed; }
+@media (max-width: 640px) { .wa-dialog .dialog-footer > * { flex: 1; justify-content: center; } }
