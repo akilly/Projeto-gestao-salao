@@ -41,3 +41,16 @@ test('lembrete diz hoje, amanhã ou o dia da semana com o artigo certo', () => {
     assert.equal(whenText('2026-10-31', '2026-10-28', 'sábado, 31 de outubro'), 'no sábado, 31 de outubro');
     assert.equal(whenText('2026-11-01', '2026-10-31', 'domingo, 1 de novembro'), 'amanhã');
 });
+
+test('histórico de mensagens da cliente é validado sem quebrar cadastros antigos', async () => {
+    const { blankState, validateState } = await import('../public/domain.js');
+    const s = blankState();
+    s.clients = [{ id: 'c1', name: 'Ana', phone: '(41) 99999-0001', status: 'permanent', color: 'rose', note: '', alert: '' }];
+    assert.doesNotThrow(() => validateState(s));
+    s.clients[0].waLog = [{ at: new Date().toISOString(), context: 'Lembrete', text: 'Oi, Ana!' }];
+    assert.doesNotThrow(() => validateState(s));
+    s.clients[0].waLog = [{ at: 'x', text: 'a'.repeat(1001) }];
+    assert.throws(() => validateState(s), /Histórico de mensagens inválido/);
+    s.clients[0].waLog = 'texto';
+    assert.throws(() => validateState(s), /Histórico de mensagens inválido/);
+});
