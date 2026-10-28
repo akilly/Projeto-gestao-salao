@@ -226,6 +226,9 @@ export function validateState(s, previous = null) {
     for (const c of s.clients)
         if (!c.name?.trim() || typeof c.phone !== 'string' || c.name.length > 100 || c.phone.replace(/\D/g, '').length < 10 || c.phone.replace(/\D/g, '').length > 15 || !['temporary', 'permanent'].includes(c.status))
             fail('Cliente inválido.');
+    for (const c of s.clients)
+        if (c.waLog !== undefined && (!Array.isArray(c.waLog) || c.waLog.length > 20 || c.waLog.some(m => !m || typeof m.at !== 'string' || m.at.length > 40 || typeof m.text !== 'string' || m.text.length > 1000 || (m.context !== undefined && (typeof m.context !== 'string' || m.context.length > 300)))))
+            fail('Histórico de mensagens inválido.');
     for (const x of s.services)
         if (!x.name?.trim() || !positive(x.duration) || !nonnegative(x.buffer))
             fail('Serviço inválido.');
