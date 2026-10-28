@@ -899,3 +899,47 @@ button.demo-label:hover { color: var(--accent); }
 #delete-error:empty { display: none; }
 .audit-row .icon-btn { margin-left: 8px; }
 @media (max-width: 640px) { .dialog-footer .footer-delete { margin-right: 0; width: 100%; order: 9; } .dialog-footer .footer-delete .btn { width: 100%; justify-content: center; } }
+
+/* Gráficos do Financeiro · paleta validada (CVD, contraste) nos dois temas */
+.fin-charts { --series-1: #7046b4; --series-2: #eb6834; --chart-grid: #ece7f3; --chart-track: #f1edf7; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0 0 20px; }
+:root[data-theme="dark"] .fin-charts { --series-1: #9d78e6; --series-2: #d95926; --chart-grid: #4a4159; --chart-track: #463d56; }
+.chart-card { padding: 18px 20px; min-width: 0; }
+.chart-card.wide { grid-column: 1 / -1; }
+.chart-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.chart-head h2 { font-size: 15px; margin: 0; }
+.chart-head .sub { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+.fin-charts .chart-legend { display: flex; justify-content: flex-start; padding: 0; gap: 16px; font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+.fin-charts .chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.fin-charts .chart-legend .key { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.key.s1 { background: var(--series-1); } .key.s2 { background: var(--series-2); }
+.chart-plot { position: relative; }
+.flow-area { position: relative; height: 220px; margin: 8px 0 26px 64px; }
+.flow-tick { position: absolute; left: -64px; right: 0; height: 0; border-top: 1px solid var(--chart-grid); }
+.flow-tick:first-child { border-top-color: var(--line); }
+.flow-tick b { position: absolute; left: 0; width: 56px; transform: translateY(-50%); text-align: right; font-weight: 400; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.flow-cols { position: absolute; inset: 0; display: flex; }
+.flow-col { flex: 1; position: relative; display: flex; justify-content: center; cursor: pointer; outline: none; border-radius: 8px; }
+.flow-col:hover, .flow-col.is-active { background: color-mix(in srgb, var(--series-1) 6%, transparent); }
+.flow-col:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
+.flow-bars { display: flex; align-items: flex-end; gap: 2px; height: 100%; }
+.flow-bars .mark, .flow-bars .mark-empty { width: 22px; border-radius: 4px 4px 0 0; }
+.flow-bars .mark.s1 { background: var(--series-1); } .flow-bars .mark.s2 { background: var(--series-2); }
+.flow-x { position: absolute; top: calc(100% + 8px); font-size: 11px; color: var(--muted); white-space: nowrap; }
+@media (max-width: 640px) { .flow-area { height: 180px; margin-left: 52px; } .flow-tick { left: -52px; } .flow-tick b { width: 46px; } .flow-bars .mark, .flow-bars .mark-empty { width: 14px; } }
+.chart-tip { position: absolute; z-index: 3; pointer-events: none; white-space: pre-line; background: var(--surface-solid); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12px; line-height: 1.5; box-shadow: 0 8px 24px rgba(40, 20, 70, .14); max-width: 240px; font-variant-numeric: tabular-nums; }
+.bar-list { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 10px; }
+.bar-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label value" "track track"; gap: 4px 10px; align-items: center; cursor: default; outline: none; border-radius: 6px; }
+.bar-list li:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.bar-label { grid-area: label; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-value { grid-area: value; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bar-track { grid-area: track; height: 10px; border-radius: 4px; background: var(--chart-track); overflow: hidden; }
+.bar-fill { display: block; height: 100%; border-radius: 0 4px 4px 0; background: var(--series-1); }
+.chart-card.s2 .bar-fill { background: var(--series-2); }
+.bar-list li.is-active .bar-label { font-weight: 700; }
+.chart-total { margin: 12px 0 0; }
+.chart-empty { margin: 18px 0; }
+.chart-table { margin-top: 10px; font-size: 13px; }
+.chart-table summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+.chart-table table { margin-top: 8px; }
+@media (max-width: 980px) { .fin-charts { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .fin-charts { grid-template-columns: 1fr; } .chart-card { padding: 16px; } }
