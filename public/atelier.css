@@ -847,3 +847,15 @@ button.demo-label:hover { color: var(--accent); }
   dialog .finish-progress span { font-size: 12px; }
   dialog .form-error, dialog #form-error { font-size: 14px; }
 }
+
+/* Cadastro rápido de cliente dentro dos formulários */
+.quick-client { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.quick-client > .field { margin: 0; }
+.quick-client-toggle { align-self: flex-start; padding-left: 0; padding-right: 0; }
+.quick-client-new { margin: 6px 0 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); min-width: 0; }
+.quick-client-new legend { padding: 0 4px; font-weight: 700; font-size: 13px; }
+.quick-client-new .notice { margin: 0; }
+.quick-client-new .notice p { margin: 8px 0; overflow-wrap: anywhere; }
+.quick-client-match:empty, .quick-client-error:empty { display: none; }
+.quick-client-error { padding: 0; }
+@media (max-width: 640px) { .quick-client-new .row > .btn { flex: 1; justify-content: center; } }
