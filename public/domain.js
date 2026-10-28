@@ -321,14 +321,15 @@ export function validateState(s, previous = null) {
                 const fresh = s[key].find(x => x.id === old.id);
                 if (!fresh)
                     fail('Registros financeiros e de estoque não podem ser excluídos.');
-                if (key === 'movements' && JSON.stringify(old) !== JSON.stringify(fresh))
-                    fail('Corrija o estoque por um novo movimento.');
-                if (key === 'payments' && ['amount', 'method', 'date', 'clientId', 'isOpening'].some(k => old[k] !== fresh[k]))
-                    fail('Recebimentos confirmados não podem ser sobrescritos.');
-                if (key === 'records' && ['clientId', 'date', 'total', 'billId', 'appointmentId', 'noProducts', 'serviceIds'].some(k => JSON.stringify(old[k]) !== JSON.stringify(fresh[k])))
-                    fail('Dados do fechamento confirmado não podem ser sobrescritos.');
-                if (key === 'bills' && ['clientId', 'total', 'recordId', 'isOpening'].some(k => old[k] !== fresh[k]))
-                    fail('O valor do lançamento confirmado não pode ser sobrescrito.');
+                // Correções permitidas: o livro de estoque e os saldos acima são recalculados e conferidos por inteiro.
+                if (key === 'movements' && (['productId', 'type', 'recordId', 'expenseId'].some(k => old[k] !== fresh[k]) || (old.type === 'consumption' && ['quantity', 'unitCost', 'date'].some(k => old[k] !== fresh[k]))))
+                    fail('Consumo de atendimento é corrigido pela ficha; exclua o atendimento para refazer o consumo.');
+                if (key === 'payments' && (['clientId', 'isOpening', 'kind'].some(k => old[k] !== fresh[k]) || ((cardMethod(old.method) || cardMethod(fresh.method)) && ['amount', 'method', 'date'].some(k => old[k] !== fresh[k]))))
+                    fail('Pagamentos no cartão não podem ser alterados. Exclua e registre de novo.');
+                if (key === 'records' && ['clientId', 'date', 'billId', 'appointmentId', 'noProducts'].some(k => JSON.stringify(old[k]) !== JSON.stringify(fresh[k])))
+                    fail('Cliente, data e consumo do atendimento não podem ser alterados. Exclua e registre de novo.');
+                if (key === 'bills' && ['clientId', 'recordId', 'isOpening'].some(k => old[k] !== fresh[k]))
+                    fail('A cliente da cobrança não pode ser alterada. Exclua e registre de novo.');
                 if (key === 'installments' && old.receivedDate && JSON.stringify(old) !== JSON.stringify(fresh))
                     fail('Repasses confirmados não podem ser sobrescritos.');
             }
