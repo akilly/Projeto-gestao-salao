@@ -480,6 +480,7 @@ function modal(title, body, footer = '', wide = false) {
     document.getElementById('overlay-root').innerHTML = `<dialog id="dialog" class="${wide ? 'wide' : ''}" aria-labelledby="dialog-title"><div class="dialog-head"><h2 id="dialog-title">${esc(title)}</h2>${iconBtn('close', 'close-modal', 'Fechar janela')}</div>${body}${footer ? `<div class="dialog-footer">${footer}</div>` : ''}</dialog>`;
     const d = document.getElementById('dialog');
     d.showModal();
+    initQuickClients(d);
     d.addEventListener('cancel', e => { e.preventDefault(); closeModal(); });
     d.addEventListener('click', e => {
         if (e.target === d && !(e.clientX >= d.getBoundingClientRect().left && e.clientX <= d.getBoundingClientRect().right && e.clientY >= d.getBoundingClientRect().top && e.clientY <= d.getBoundingClientRect().bottom))
@@ -546,6 +547,51 @@ function selectField(label, name, options, value, extra = '', full = false) { re
  * clientOptions — Monta pares de identificador e nome das clientes para os seletores; identifica cadastros temporários.
  */
 const clientOptions = () => state.clients.map(c => [c.id, c.name + (c.status === 'temporary' ? ' · temporário' : '')]);
+/**
+ * clientPicker — Seletor de cliente com cadastro rápido no próprio formulário.
+ * A nova cliente é validada como no cadastro completo, salva na hora e já fica selecionada; o restante do formulário é preservado.
+ */
+function clientPicker(label, value, { placeholder = '', extra = '', full = true } = {}) {
+    const key = uid(), options = [...(placeholder || !state.clients.length ? [['', placeholder || 'Nenhuma cliente cadastrada']] : []), ...clientOptions()];
+    return `<div class="quick-client ${full ? 'full' : ''}" data-quick-client>${selectField(label, 'clientId', options, value ?? '', extra, true)}<button type="button" class="btn text sm quick-client-toggle" data-action="quick-client-toggle" aria-expanded="false" aria-controls="qc-${key}">${icon('plus')}Cadastrar nova cliente</button><fieldset id="qc-${key}" class="quick-client-new form-grid" hidden disabled><legend>Nova cliente</legend>${field('Nome da nova cliente', 'quickClientName', '', 'text', 'maxlength="100" autocomplete="name"', true)}${field('Telefone com DDD', 'quickClientPhone', '', 'tel', 'maxlength="30" autocomplete="tel" inputmode="tel" data-input="quick-client-phone"', true)}<div class="quick-client-match full" role="status" aria-live="polite"></div>${selectField('Situação do cadastro', 'quickClientStatus', [['temporary', 'Temporário'], ['permanent', 'Confirmado']], 'temporary', '', true)}<p class="muted small full">A cliente é salva assim que você tocar em “Salvar cliente” e já fica selecionada aqui.</p><div class="form-error quick-client-error full" role="alert"></div><div class="row gap8 wrap full">${btn('Salvar cliente', 'quick-client-save', 'check', 'primary sm')}${btn('Voltar para a lista', 'quick-client-toggle', '', 'secondary sm')}</div></fieldset></div>`;
+}
+/** Abre ou fecha o cadastro rápido de um seletor de cliente. */
+function setQuickClient(box, open, focus = true) {
+    if (!box) return;
+    const set = box.querySelector('.quick-client-new'), toggle = box.querySelector('.quick-client-toggle');
+    set.hidden = !open; set.disabled = !open; toggle.hidden = open; toggle.setAttribute('aria-expanded', String(open));
+    box.querySelector('.quick-client-error').textContent = '';
+    if (!open) { set.querySelectorAll('input').forEach(i => { i.value = ''; }); box.querySelector('.quick-client-match').innerHTML = ''; }
+    if (focus) (open ? set.querySelector('[name="quickClientName"]') : box.querySelector('select[name="clientId"]'))?.focus();
+}
+/** Seleciona a cliente no seletor e avisa os demais campos que dependem dela (sinais, sugestões etc.). */
+function pickQuickClient(box, id) {
+    const select = box.querySelector('select[name="clientId"]'), c = state.clients.find(c => c.id === id);
+    if (!c) return;
+    if (![...select.options].some(o => o.value === id)) select.add(new Option(c.name + (c.status === 'temporary' ? ' · temporário' : ''), id));
+    const empty = [...select.options].find(o => !o.value && o.textContent === 'Nenhuma cliente cadastrada');
+    if (empty) empty.textContent = 'Selecione a cliente';
+    select.value = id;
+    if (select.form) select.form.dataset.dirty = 'true';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    setQuickClient(box, false);
+}
+/** Valida e grava a nova cliente na hora, como o cadastro completo faz. */
+function saveQuickClient(box) {
+    const set = box.querySelector('.quick-client-new'), error = box.querySelector('.quick-client-error'), get = n => set.querySelector(`[name="${n}"]`);
+    error.textContent = '';
+    try {
+        const values = validateClientContact({ name: get('quickClientName').value, phone: get('quickClientPhone').value }, state.clients);
+        const c = { id: uid(), ...values, status: get('quickClientStatus').value === 'permanent' ? 'permanent' : 'temporary', color: ['rose', 'olive', 'sand', 'lilac'][state.clients.length % 4], note: '', alert: '' };
+        state.clients.push(c);
+        audit('Cadastro criado durante o preenchimento de um formulário: ' + c.name, '', c);
+        if (!persist('Cliente cadastrada e selecionada.')) { error.textContent = 'Não foi possível salvar a cliente agora. Tente novamente.'; return; }
+        pickQuickClient(box, c.id);
+    }
+    catch (e) { error.textContent = e.message; get(/telefone/i.test(e.message) ? 'quickClientPhone' : 'quickClientName')?.focus(); }
+}
+/** Sem clientes cadastradas, o cadastro rápido já começa aberto. */
+function initQuickClients(root) { if (!state.clients.length) root?.querySelectorAll('[data-quick-client]').forEach(box => setQuickClient(box, true, false)); }
 /**
  * serviceOptions — Monta as opções do catálogo de serviços.
  */
@@ -662,7 +708,7 @@ let quotePhotos = [];
 function quoteForm(id) {
     const q = state.quotes.find(q => q.id === id);
     quotePhotos = [...(q?.photos || [])];
-    openForm(q ? 'Avaliar solicitação' : 'Novo orçamento', 'quote', selectField('Cliente', 'clientId', clientOptions(), q?.clientId || state.clients[0]?.id, 'required') + selectField('Serviço solicitado', 'serviceId', serviceOptions(), q?.serviceId || state.services[0]?.id, 'required') + selectField('Etapa da avaliação', 'status', Object.entries(quoteLabel), q?.status || 'review', 'required') + field('Valor definido por você (R$)', 'value', q?.value ?? '', 'number', 'min="0.01" max="100000" step="0.01"') + textfield('Contexto, histórico e informações ausentes', 'notes', q?.notes || '', 'maxlength="3000"') + textfield('Perguntas para revisar e copiar', 'question', q?.question || '', 'maxlength="3000"') + `<div class="full"><label class="field"><span>Fotos associadas manualmente</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple data-change="quote-photos"><small>Até 3 fotos, com no máximo 500 KB cada. Sem análise visual.</small></label><div class="photos" id="quote-photos">${photoMarkup()}</div></div>` + '<div class="notice full">Salvar registra sua avaliação. Nenhuma proposta ou pergunta é enviada à cliente. Copie o texto revisado para usar no seu canal de atendimento.</div>', 'Salvar avaliação', id || '', true);
+    openForm(q ? 'Avaliar solicitação' : 'Novo orçamento', 'quote', clientPicker('Cliente', q?.clientId || state.clients[0]?.id, { extra: 'required', full: false }) + selectField('Serviço solicitado', 'serviceId', serviceOptions(), q?.serviceId || state.services[0]?.id, 'required') + selectField('Etapa da avaliação', 'status', Object.entries(quoteLabel), q?.status || 'review', 'required') + field('Valor definido por você (R$)', 'value', q?.value ?? '', 'number', 'min="0.01" max="100000" step="0.01"') + textfield('Contexto, histórico e informações ausentes', 'notes', q?.notes || '', 'maxlength="3000"') + textfield('Perguntas para revisar e copiar', 'question', q?.question || '', 'maxlength="3000"') + `<div class="full"><label class="field"><span>Fotos associadas manualmente</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple data-change="quote-photos"><small>Até 3 fotos, com no máximo 500 KB cada. Sem análise visual.</small></label><div class="photos" id="quote-photos">${photoMarkup()}</div></div>` + '<div class="notice full">Salvar registra sua avaliação. Nenhuma proposta ou pergunta é enviada à cliente. Copie o texto revisado para usar no seu canal de atendimento.</div>', 'Salvar avaliação', id || '', true);
     if (q?.question)
         document.querySelector('dialog .dialog-footer').insertAdjacentHTML('afterbegin', btn('Copiar perguntas', 'copy-question', 'copy', 'secondary'));
 }
@@ -673,11 +719,11 @@ function photoMarkup() { return quotePhotos.map((p, i) => `<div class="photo"><i
 /**
  * billForm — Abre lançamento manual de valor a receber de uma cliente.
  */
-function billForm() { openForm('Novo lançamento', 'bill', selectField('Cliente', 'clientId', clientOptions(), state.clients[0]?.id, 'required', true) + field('Descrição do serviço', 'description', '', 'text', 'required maxlength="160"', true) + field('Valor total (R$)', 'total', '', 'number', 'required min="0.01" max="100000" step="0.01"') + field('Data do serviço', 'date', localDate(), 'date', 'required') + field('Vencimento', 'due', localDate(), 'date', 'required', true) + '<div class="notice full">O lançamento cria um saldo a receber. Sinais e pagamentos são registrados separadamente.</div>', 'Criar lançamento'); }
+function billForm() { openForm('Novo lançamento', 'bill', clientPicker('Cliente', state.clients[0]?.id, { extra: 'required' }) + field('Descrição do serviço', 'description', '', 'text', 'required maxlength="160"', true) + field('Valor total (R$)', 'total', '', 'number', 'required min="0.01" max="100000" step="0.01"') + field('Data do serviço', 'date', localDate(), 'date', 'required') + field('Vencimento', 'due', localDate(), 'date', 'required', true) + '<div class="notice full">O lançamento cria um saldo a receber. Sinais e pagamentos são registrados separadamente.</div>', 'Criar lançamento'); }
 /**
  * taskForm — Abre cadastro ou edição de tarefa interna.
  */
-function taskForm(id) { const t = state.tasks.find(t => t.id === id); openForm(t ? 'Cuidar desta tarefa' : 'Uma nova tarefa', 'task', field('O que precisa ser feito?', 'title', t?.title || '', 'text', 'required maxlength="180"', true) + selectField('Área', 'area', ['Atendimento', 'Agenda', 'Clientes', 'Financeiro', 'Operação'].map(t => [t, t]), t?.area || 'Atendimento', 'required') + selectField('Prioridade', 'priority', ['Alta', 'Média', 'Baixa'].map(t => [t, t]), t?.priority || 'Média', 'required') + field('Prazo', 'due', t?.due || localDate(), 'date', 'required') + selectField('Cliente relacionado', 'clientId', [['', 'Nenhum'], ...clientOptions()], t?.clientId || ''), 'Salvar tarefa', id || ''); }
+function taskForm(id) { const t = state.tasks.find(t => t.id === id); openForm(t ? 'Cuidar desta tarefa' : 'Uma nova tarefa', 'task', field('O que precisa ser feito?', 'title', t?.title || '', 'text', 'required maxlength="180"', true) + selectField('Área', 'area', ['Atendimento', 'Agenda', 'Clientes', 'Financeiro', 'Operação'].map(t => [t, t]), t?.area || 'Atendimento', 'required') + selectField('Prioridade', 'priority', ['Alta', 'Média', 'Baixa'].map(t => [t, t]), t?.priority || 'Média', 'required') + field('Prazo', 'due', t?.due || localDate(), 'date', 'required') + clientPicker('Cliente relacionado', t?.clientId || '', { placeholder: 'Nenhum', full: false }), 'Salvar tarefa', id || ''); }
 /**
  * reviewDraft — Permite revisar um texto de resposta antes de copiá-lo; não envia mensagens.
  */
@@ -802,6 +848,7 @@ document.addEventListener('input', e => {
     if (e.target.form) e.target.form.dataset.dirty = 'true';
     if (e.target.name === 'firstDue') e.target.dataset.touched = 'true';
     if (e.target.dataset.input === 'booking-phone') showBookingClientMatch(e.target.form);
+    if (e.target.dataset.input === 'quick-client-phone') { const box = e.target.closest('[data-quick-client]'), match = matchingClient(state.clients, e.target.value); box.querySelector('.quick-client-match').innerHTML = match ? `<div class="notice orange"><strong>Este telefone já está cadastrado.</strong><p>${esc(match.name)} · ${esc(match.phone)}</p>${btn('Usar este cadastro', 'quick-client-use', 'users', 'secondary sm', `data-id="${esc(match.id)}"`)}</div>` : ''; }
     if (e.target.tagName === 'TEXTAREA') { e.target.style.height = 'auto'; e.target.style.height = Math.min(420, Math.max(115, e.target.scrollHeight)) + 'px'; }
     if (e.target.dataset.input === 'client-search') {
         ui.clientQuery = e.target.value;
@@ -976,6 +1023,9 @@ document.addEventListener('click', async (e) => {
     if (a === 'edit-client')
         clientForm(id);
     if (a === 'booking-client-mode') setBookingClientMode(target.closest('form'), target.dataset.mode);
+    if (a === 'quick-client-toggle') { const box = target.closest('[data-quick-client]'); setQuickClient(box, box.querySelector('.quick-client-new').hidden); }
+    if (a === 'quick-client-save') saveQuickClient(target.closest('[data-quick-client]'));
+    if (a === 'quick-client-use') pickQuickClient(target.closest('[data-quick-client]'), id);
     if (a === 'booking-use-existing') { const form = target.closest('form'); if (state.clients.some(c => c.id === id)) { form.elements.clientId.value = id; setBookingClientMode(form, 'existing'); } }
     if (a === 'new-appointment')
         appointmentForm({ date: target.dataset.date, clientId: target.dataset.client });
@@ -1717,7 +1767,7 @@ function depositForm() {
         toast('Cadastre a cliente antes de registrar o sinal.');
         return;
     }
-    openForm('Registrar sinal recebido', 'v2-deposit', selectField('Cliente', 'clientId', clientOptions(), state.clients[0].id, 'required', true) + field('Valor do sinal (R$)', 'amount', '', 'number', 'required min="0.01" max="100000" step="0.01"') + field('Data do recebimento', 'date', localDate(), 'date', `required min="${state.settings.cutoff}" max="${localDate()}"`) + selectField('Forma de pagamento', 'method', METHODS.map(m => [m, m]), 'Pix', 'required data-change="v2-payment-method"', true) + selectField('Vincular a um agendamento (opcional)', 'appointmentId', [['', 'Sem agendamento vinculado'], ...state.appointments.filter(a => a.clientId).map(a => [a.id, client(a.clientId).name + ' · ' + fmt(a.date) + ' ' + a.time])], '', '', true) + cardFields() + '<div class="notice full">O sinal ficará disponível para aplicar no fechamento. Recebimentos anteriores ao início devem entrar em “Saldos de abertura”.</div>', 'Confirmar sinal');
+    openForm('Registrar sinal recebido', 'v2-deposit', clientPicker('Cliente', state.clients[0]?.id, { extra: 'required' }) + field('Valor do sinal (R$)', 'amount', '', 'number', 'required min="0.01" max="100000" step="0.01"') + field('Data do recebimento', 'date', localDate(), 'date', `required min="${state.settings.cutoff}" max="${localDate()}"`) + selectField('Forma de pagamento', 'method', METHODS.map(m => [m, m]), 'Pix', 'required data-change="v2-payment-method"', true) + selectField('Vincular a um agendamento (opcional)', 'appointmentId', [['', 'Sem agendamento vinculado'], ...state.appointments.filter(a => a.clientId).map(a => [a.id, client(a.clientId).name + ' · ' + fmt(a.date) + ' ' + a.time])], '', '', true) + cardFields() + '<div class="notice full">O sinal ficará disponível para aplicar no fechamento. Recebimentos anteriores ao início devem entrar em “Saldos de abertura”.</div>', 'Confirmar sinal');
     updateCardFields(document.querySelector('dialog form'));
 }
 /**
@@ -1773,7 +1823,7 @@ function expenseForm() {
 function openingForm() {
     if (!requireStarted())
         return;
-    openForm('Saldos de abertura', 'v2-opening', selectField('O que vai trazer da operação anterior?', 'type', [['debt', 'Saldo que uma cliente ainda deve'], ['deposit', 'Sinal já recebido para atendimento futuro'], ['expense', 'Aluguel / conta do espaço ainda não paga'], ['card', 'Repasse de cartão anterior ainda a receber']], 'debt', 'required data-change="v2-opening-type"', true) + selectField('Cliente (exceto despesa do espaço)', 'clientId', [['', 'Selecione'], ...clientOptions()], '', '', true) + field('Descrição / referência', 'description', '', 'text', 'required maxlength="160"', true) + field('Valor pendente ou sinal disponível (R$)', 'amount', '', 'number', 'required min="0.01" max="100000" step="0.01"') + field('Vencimento / repasse previsto', 'due', localDate(), 'date', 'required') + field('Taxa deste repasse em R$ (opcional)', 'feeTotal', '', 'number', 'min="0" max="100000" step="0.01"', true) + '<div class="notice full">Esses valores são anteriores à data de início. Sinais já recebidos não entram novamente como receita. Dívidas, contas e repasses entram no caixa apenas quando você confirmar o recebimento ou pagamento.</div>', 'Confirmar saldo inicial');
+    openForm('Saldos de abertura', 'v2-opening', selectField('O que vai trazer da operação anterior?', 'type', [['debt', 'Saldo que uma cliente ainda deve'], ['deposit', 'Sinal já recebido para atendimento futuro'], ['expense', 'Aluguel / conta do espaço ainda não paga'], ['card', 'Repasse de cartão anterior ainda a receber']], 'debt', 'required data-change="v2-opening-type"', true) + clientPicker('Cliente (exceto despesa do espaço)', '', { placeholder: 'Selecione' }) + field('Descrição / referência', 'description', '', 'text', 'required maxlength="160"', true) + field('Valor pendente ou sinal disponível (R$)', 'amount', '', 'number', 'required min="0.01" max="100000" step="0.01"') + field('Vencimento / repasse previsto', 'due', localDate(), 'date', 'required') + field('Taxa deste repasse em R$ (opcional)', 'feeTotal', '', 'number', 'min="0" max="100000" step="0.01"', true) + '<div class="notice full">Esses valores são anteriores à data de início. Sinais já recebidos não entram novamente como receita. Dívidas, contas e repasses entram no caixa apenas quando você confirmar o recebimento ou pagamento.</div>', 'Confirmar saldo inicial');
 }
 /**
  * settleForm — Abre confirmação de repasse do cartão com valor líquido e data efetivos.
@@ -1911,7 +1961,7 @@ function finishForm(appointmentId, manual = false) {
         return;
     }
     finishStep = 0;
-    modal('Finalizar atendimento', `<form novalidate data-form="v2-finish"><input type="hidden" name="appointmentId" value="${a?.id || ''}"><div class="finish-progress"><span class="active">1 · Atendimento</span><span>2 · Produtos</span><span>3 · Pagamento</span></div><div class="dialog-body"><section class="finish-step form-grid" data-step="0">${a ? `<div class="notice full agenda-prefill">${icon('check')}<div><strong>Dados preenchidos pela agenda</strong><p>${esc(client(cid).name)} · ${a.time} · ${a.duration} min + ${a.buffer} min de intervalo</p><small>Confira abaixo os procedimentos realizados e informe o preço combinado.</small></div></div><input type="hidden" name="clientId" value="${cid}">` : selectField('Cliente', 'clientId', [['', 'Selecione a cliente'], ...clientOptions()], cid, 'required data-change="v2-finish-client"', true)}${field('Data do atendimento', 'date', a?.date || localDate(), 'date', `required ${a ? 'readonly' : ''} data-change="v6-finish-date" min="${state.settings.cutoff}" max="${localDate()}"`, true)}<div class="full"><label class="field"><span>Serviços realizados nesta visita</span></label><div class="service-checks">${state.services.map(s => `<label><input type="checkbox" name="serviceIds" value="${s.id}" ${a?.serviceId === s.id ? 'checked' : ''} data-change="v2-finish-services"><span>${esc(s.name)}</span></label>`).join('')}</div></div>${field('Preço total combinado (R$)', 'total', '', 'number', 'required min="0.01" max="100000" step="0.01"', true)}<div class="notice full">O preço pertence ao conjunto. Cada serviço selecionado conta no ranking de frequência.</div></section><section class="finish-step form-grid" data-step="1" hidden><div class="full"><h3>Produtos realmente utilizados</h3><p class="muted small" style="margin-top:7px">Informe na unidade de cada produto. O saldo será baixado na confirmação final.</p></div><div id="finish-suggestion" class="full"></div><div class="consumption-list full">${state.products.map(p => { const st = stockOf(state, p.id); return `<label class="consumption-row"><span class="grow"><strong>${esc(p.name)}</strong><small>Disponível: ${stockNumber(st.quantity)} ${p.unit}${st.unitCost === null ? ' · custo a conferir' : ''}</small></span><input type="number" name="consume_${p.id}" min="0" max="${st.quantity}" step="${p.unit === 'un' ? '1' : '0.001'}" placeholder="0" aria-label="Quantidade usada de ${esc(p.name)}"><span>${p.unit}</span></label>`; }).join('') || '<p class="notice">Nenhum produto cadastrado. Cadastre o estoque antes de registrar consumo.</p>'}</div><label class="consumption-review full" id="consumption-review" hidden><input type="checkbox" name="consumptionReviewed">Conferi e ajustei as quantidades sugeridas para o consumo real desta visita.</label><label class="row full small"><input type="checkbox" name="noProducts">Confirmo que não houve consumo de produtos neste atendimento.</label>${textfield('Fórmula e cor, quando aplicável', 'formula', '', 'maxlength="2000"')}${textfield('Observações técnicas', 'notes', '', 'maxlength="3000"')}${field('Data recomendada de manutenção (opcional)', 'followup', '', 'date', '', true)}</section><section class="finish-step form-grid" data-step="2" hidden><div class="full" id="finish-summary"></div><div class="full" id="finish-deposits">${depositChecks(cid)}</div><div class="full row between wrap"><p class="muted small">Informe somente o pagamento confirmado agora.</p>${btn('Preencher saldo restante', 'v6-payment-rest', 'wallet', 'text')}</div>${field('Pagamento recebido ou aceito agora (R$)', 'amount', 0, 'number', 'min="0" max="100000" step="0.01"', true)}${selectField('Forma de pagamento', 'method', METHODS.map(m => [m, m]), 'Pix', 'data-change="v2-payment-method"', true)}${cardFields()}${field('Vencimento do saldo restante', 'due', localDate(), 'date', 'required', true)}<div class="notice full">Sinais selecionados serão aplicados uma única vez. Se o pagamento for parcial ou zero, o restante ficará a receber. Cartão gera parcelas previstas, sem contar como dinheiro recebido agora.</div></section></div><div id="form-error" class="form-error" role="alert"></div><div class="dialog-footer"><button type="button" class="btn secondary" data-action="v2-finish-back">Cancelar</button><button type="button" class="btn primary" data-action="v2-finish-next">Continuar ${icon('arrow')}</button><button type="submit" class="btn primary finish-submit" hidden>${icon('check')}Confirmar atendimento</button></div></form>`, '', true);
+    modal('Finalizar atendimento', `<form novalidate data-form="v2-finish"><input type="hidden" name="appointmentId" value="${a?.id || ''}"><div class="finish-progress"><span class="active">1 · Atendimento</span><span>2 · Produtos</span><span>3 · Pagamento</span></div><div class="dialog-body"><section class="finish-step form-grid" data-step="0">${a ? `<div class="notice full agenda-prefill">${icon('check')}<div><strong>Dados preenchidos pela agenda</strong><p>${esc(client(cid).name)} · ${a.time} · ${a.duration} min + ${a.buffer} min de intervalo</p><small>Confira abaixo os procedimentos realizados e informe o preço combinado.</small></div></div><input type="hidden" name="clientId" value="${cid}">` : clientPicker('Cliente', cid, { placeholder: 'Selecione a cliente', extra: 'required data-change="v2-finish-client"' })}${field('Data do atendimento', 'date', a?.date || localDate(), 'date', `required ${a ? 'readonly' : ''} data-change="v6-finish-date" min="${state.settings.cutoff}" max="${localDate()}"`, true)}<div class="full"><label class="field"><span>Serviços realizados nesta visita</span></label><div class="service-checks">${state.services.map(s => `<label><input type="checkbox" name="serviceIds" value="${s.id}" ${a?.serviceId === s.id ? 'checked' : ''} data-change="v2-finish-services"><span>${esc(s.name)}</span></label>`).join('')}</div></div>${field('Preço total combinado (R$)', 'total', '', 'number', 'required min="0.01" max="100000" step="0.01"', true)}<div class="notice full">O preço pertence ao conjunto. Cada serviço selecionado conta no ranking de frequência.</div></section><section class="finish-step form-grid" data-step="1" hidden><div class="full"><h3>Produtos realmente utilizados</h3><p class="muted small" style="margin-top:7px">Informe na unidade de cada produto. O saldo será baixado na confirmação final.</p></div><div id="finish-suggestion" class="full"></div><div class="consumption-list full">${state.products.map(p => { const st = stockOf(state, p.id); return `<label class="consumption-row"><span class="grow"><strong>${esc(p.name)}</strong><small>Disponível: ${stockNumber(st.quantity)} ${p.unit}${st.unitCost === null ? ' · custo a conferir' : ''}</small></span><input type="number" name="consume_${p.id}" min="0" max="${st.quantity}" step="${p.unit === 'un' ? '1' : '0.001'}" placeholder="0" aria-label="Quantidade usada de ${esc(p.name)}"><span>${p.unit}</span></label>`; }).join('') || '<p class="notice">Nenhum produto cadastrado. Cadastre o estoque antes de registrar consumo.</p>'}</div><label class="consumption-review full" id="consumption-review" hidden><input type="checkbox" name="consumptionReviewed">Conferi e ajustei as quantidades sugeridas para o consumo real desta visita.</label><label class="row full small"><input type="checkbox" name="noProducts">Confirmo que não houve consumo de produtos neste atendimento.</label>${textfield('Fórmula e cor, quando aplicável', 'formula', '', 'maxlength="2000"')}${textfield('Observações técnicas', 'notes', '', 'maxlength="3000"')}${field('Data recomendada de manutenção (opcional)', 'followup', '', 'date', '', true)}</section><section class="finish-step form-grid" data-step="2" hidden><div class="full" id="finish-summary"></div><div class="full" id="finish-deposits">${depositChecks(cid)}</div><div class="full row between wrap"><p class="muted small">Informe somente o pagamento confirmado agora.</p>${btn('Preencher saldo restante', 'v6-payment-rest', 'wallet', 'text')}</div>${field('Pagamento recebido ou aceito agora (R$)', 'amount', 0, 'number', 'min="0" max="100000" step="0.01"', true)}${selectField('Forma de pagamento', 'method', METHODS.map(m => [m, m]), 'Pix', 'data-change="v2-payment-method"', true)}${cardFields()}${field('Vencimento do saldo restante', 'due', localDate(), 'date', 'required', true)}<div class="notice full">Sinais selecionados serão aplicados uma única vez. Se o pagamento for parcial ou zero, o restante ficará a receber. Cartão gera parcelas previstas, sem contar como dinheiro recebido agora.</div></section></div><div id="form-error" class="form-error" role="alert"></div><div class="dialog-footer"><button type="button" class="btn secondary" data-action="v2-finish-back">Cancelar</button><button type="button" class="btn primary" data-action="v2-finish-next">Continuar ${icon('arrow')}</button><button type="submit" class="btn primary finish-submit" hidden>${icon('check')}Confirmar atendimento</button></div></form>`, '', true);
     const form = document.querySelector('dialog form');
     updateCardFields(form);
     updateFinishRequirements(form);
@@ -2472,3 +2522,19 @@ document.addEventListener('click',async event=>{
 document.addEventListener('click',event=>{if(!event.target.closest('[data-salon-logout]'))return;event.preventDefault();confirmLeaving('Deseja sair da conta? Confira se as alterações foram salvas.',async()=>{try{const r=await fetch('/api/auth/logout',{method:'POST'});if(!r.ok)throw Error();location.replace('/login');}catch{toast('Não foi possível sair. Tente novamente.');}});});
 
 document.addEventListener('input',event=>{if(event.target.id!=='deletion-search')return;const query=event.target.value.toLocaleLowerCase('pt-BR');document.querySelectorAll('[data-delete-row]').forEach(row=>{row.hidden=!row.textContent.toLocaleLowerCase('pt-BR').includes(query);});});
+
+/** Enter no cadastro rápido salva a cliente em vez de enviar o formulário principal. */
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.target.tagName !== 'INPUT' || !e.target.closest('.quick-client-new')) return;
+    e.preventDefault();
+    saveQuickClient(e.target.closest('[data-quick-client]'));
+});
+/** Impede salvar o formulário com uma nova cliente digitada e ainda não salva. */
+document.addEventListener('submit', e => {
+    const open = [...(e.target.querySelectorAll?.('.quick-client-new:not([hidden])') || [])].find(set => [...set.querySelectorAll('input')].some(i => i.value.trim()));
+    if (!open) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    const error = open.querySelector('.quick-client-error');
+    error.textContent = 'Salve a nova cliente ou volte para a lista antes de continuar.';
+    open.querySelector('[name="quickClientName"]')?.focus();
+}, true);
