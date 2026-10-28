@@ -761,14 +761,38 @@ async function copyText(text) {
  * o envio acontece no WhatsApp, e as respostas chegam lá, pelas notificações do celular.
  */
 let waContext = null;
+/** Resumo do caso da cliente para a profissional saber com quem está falando antes de enviar. Somente leitura. */
+function waClientContext(c) {
+    const today = localDate(), short = d => fmt(d, { day: '2-digit', month: '2-digit', year: 'numeric' }), items = [];
+    const item = (label, value, tone = '') => items.push(`<div class="wa-ctx-item ${tone}"><dt>${label}</dt><dd>${value}</dd></div>`);
+    if (c.alert) item(icon('warning') + 'Alerta técnico', esc(c.alert), 'red');
+    if (c.status === 'temporary') item('Cadastro', 'Temporário · ainda não confirmado', 'orange');
+    if (c.note) item('Preferências e observações', esc(c.note));
+    const conv = state.conversations.filter(v => v.clientId === c.id && v.status !== 'resolved')[0];
+    if (conv) item('Conversa pendente', `<strong>${esc(conv.category)}</strong> · ${esc(conv.summary || conv.messages?.at(-1)?.text || '')}`, ['Segurança', 'Reclamação'].includes(conv.category) ? 'red' : '');
+    const next = state.appointments.filter(a => a.clientId === c.id && a.date >= today && !['cancelled', 'absent', 'completed', 'blocked'].includes(a.status)).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
+    if (next) item('Próximo horário', `${esc(service(next.serviceId).name)} · ${esc(longDate(next.date))} às ${next.time} · ${esc(statusLabel[next.status] || '')}`);
+    const last = state.records.filter(r => r.clientId === c.id).sort((a, b) => b.date.localeCompare(a.date))[0];
+    if (last) item('Último atendimento', `${esc((last.serviceIds || [last.serviceId]).map(id => service(id).name).join(' + '))} · ${short(last.date)}${last.formula ? `<br><small>Fórmula: ${esc(last.formula)}</small>` : ''}${last.followup ? `<br><small>Manutenção sugerida: ${short(last.followup)}</small>` : ''}`);
+    const open = state.bills.filter(b => b.clientId === c.id).map(b => ({ b, balance: balanceFor(b, state.payments) })).filter(x => x.balance > 0.004);
+    if (open.length) { const total = open.reduce((s, x) => s + x.balance, 0), late = open.filter(x => x.b.due < today); item('Saldo em aberto', `${money(total)} em ${open.length} cobrança${open.length === 1 ? '' : 's'}${late.length ? ` · <strong>${late.length} vencida${late.length === 1 ? '' : 's'}</strong>` : ''}`, late.length ? 'red' : 'orange'); }
+    const deposits = availableDeposits(state, c.id);
+    if (deposits.length) item('Sinal disponível', money(deposits.reduce((s, p) => s + p.amount, 0)));
+    const quote = state.quotes.filter(q => q.clientId === c.id && !['closed'].includes(q.status)).sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
+    if (quote) item('Orçamento', `${esc(service(quote.serviceId).name)} · ${esc(quoteLabel[quote.status] || '')}${quote.value ? ' · ' + money(quote.value) : ''}${quote.notes ? `<br><small>${esc(quote.notes)}</small>` : ''}`);
+    const log = (c.waLog || []).slice(0, 3);
+    const history = log.length ? `<div class="wa-ctx-history"><strong>Mensagens já enviadas por aqui</strong>${log.map(m => `<details><summary>${esc(new Date(m.at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))} · ${esc(m.context || 'Mensagem')}</summary><p>${esc(m.text)}</p></details>`).join('')}</div>` : '';
+    if (!items.length && !history) return '<p class="muted small wa-ctx-empty">Sem pendências, observações ou histórico registrados para esta cliente.</p>';
+    return `<dl class="wa-ctx-list">${items.join('')}</dl>${history}`;
+}
 function waComposer(clientId, text, { title = 'Enviar pelo WhatsApp', context = '', onOpen = null } = {}) {
     const c = state.clients.find(c => c.id === clientId);
     if (!c) { toast('Escolha uma cliente antes de enviar pelo WhatsApp.'); return; }
     waClose();
-    waContext = { clientId, context, onOpen };
+    waContext = { clientId, context, onOpen, title };
     const d = document.createElement('dialog');
     d.id = 'wa-dialog'; d.className = 'wa-dialog'; d.setAttribute('aria-labelledby', 'wa-title');
-    d.innerHTML = `<div class="dialog-head"><h2 id="wa-title">${esc(title)}</h2>${iconBtn('close', 'wa-close', 'Fechar janela')}</div><div class="dialog-body"><div class="row wa-recipient">${avatar(c)}<div><h3>${esc(c.name)}</h3>${context ? `<p class="muted small">${esc(context)}</p>` : ''}</div></div><div class="form-grid"><label class="field full"><span>Telefone do WhatsApp</span><input name="waPhone" type="tel" inputmode="tel" maxlength="30" autocomplete="off" value="${esc(c.phone)}" data-input="wa-compose"><small class="wa-phone-hint" aria-live="polite"></small></label><label class="field full"><span>Mensagem (edite antes de abrir o WhatsApp)</span><textarea name="waText" maxlength="4000" rows="8" data-input="wa-compose">${esc(text)}</textarea></label></div><p class="notice">O WhatsApp abre com este texto pronto. Confira e toque em enviar por lá. As respostas da cliente chegam no seu WhatsApp, como sempre.</p></div><div class="dialog-footer">${btn('Copiar texto', 'wa-copy', 'copy', 'secondary')}<a class="btn primary" data-action="wa-open" href="#" target="_blank" rel="noopener noreferrer">${icon('chat')}Abrir no WhatsApp</a></div>`;
+    d.innerHTML = `<div class="dialog-head"><h2 id="wa-title">${esc(title)}</h2>${iconBtn('close', 'wa-close', 'Fechar janela')}</div><div class="dialog-body"><div class="row wa-recipient">${avatar(c)}<div><h3>${esc(c.name)}</h3>${context ? `<p class="muted small">${esc(context)}</p>` : ''}</div></div><details class="wa-context" open><summary>${icon('info')}Contexto da cliente</summary>${waClientContext(c)}${destinationLink('Ver ficha completa ' + icon('arrow'), { page: 'clients', client: c.id }, 'btn text sm')}</details><div class="form-grid"><label class="field full"><span>Telefone do WhatsApp</span><input name="waPhone" type="tel" inputmode="tel" maxlength="30" autocomplete="off" value="${esc(c.phone)}" data-input="wa-compose"><small class="wa-phone-hint" aria-live="polite"></small></label><label class="field full"><span>Mensagem (edite antes de abrir o WhatsApp)</span><textarea name="waText" maxlength="4000" rows="8" data-input="wa-compose">${esc(text)}</textarea></label></div><p class="notice">O WhatsApp abre com este texto pronto. Confira e toque em enviar por lá. As respostas da cliente chegam no seu WhatsApp, como sempre.</p></div><div class="dialog-footer">${btn('Copiar texto', 'wa-copy', 'copy', 'secondary')}<a class="btn primary" data-action="wa-open" href="#" target="_blank" rel="noopener noreferrer">${icon('chat')}Abrir no WhatsApp</a></div>`;
     document.body.append(d);
     d.addEventListener('cancel', e => { e.preventDefault(); waClose(); });
     d.showModal();
@@ -802,6 +826,7 @@ function waBill(id) {
     const b = state.bills.find(b => b.id === id);
     if (!b) return;
     const balance = balanceFor(b, state.payments), full = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    if (balance <= 0.004) { toast('Esta cobrança já está quitada.'); return; }
     waComposer(b.clientId, waMessages.charge({ name: client(b.clientId).name, balance: money(balance), description: b.description, date: fmt(b.date, full), due: fmt(b.due, full) }), { title: 'Cobrança pelo WhatsApp', context: `${b.description} · saldo ${money(balance)}` });
 }
 /** Pós-atendimento: pergunta como ficou o resultado. */
@@ -810,6 +835,8 @@ function waFollowup(recordId) {
     if (r) waComposer(r.clientId, waMessages.followup({ name: client(r.clientId).name }), { title: 'Pós-atendimento pelo WhatsApp', context: `Atendimento de ${fmt(r.date)}` });
 }
 document.addEventListener('input', e => { if (e.target.dataset?.input === 'wa-compose') waUpdate(); });
+/** Abrir a ficha a partir do contexto fecha a janela de envio. */
+document.addEventListener('click', e => { if (e.target.closest?.('#wa-dialog .wa-context a')) setTimeout(waClose); }, true);
 document.addEventListener('click', async e => {
     const t = e.target.closest?.('#wa-dialog [data-action]');
     if (!t) return;
@@ -820,6 +847,8 @@ document.addEventListener('click', async e => {
         if (t.getAttribute('aria-disabled') === 'true') { e.preventDefault(); toast(text.trim() ? 'Confira o telefone, com DDD, para abrir o WhatsApp.' : 'Escreva a mensagem antes de abrir o WhatsApp.'); return; }
         const ctx = waContext, c = client(ctx.clientId);
         ctx.onOpen?.(text);
+        const target = state.clients.find(x => x.id === ctx.clientId);
+        if (target) target.waLog = [{ at: new Date().toISOString(), context: (ctx.title === 'Enviar pelo WhatsApp' ? 'Mensagem' : (ctx.title || 'Mensagem').replace(/ pelo WhatsApp$/, '')) + (ctx.context ? ' · ' + ctx.context : ''), text: text.slice(0, 1000) }, ...(target.waLog || [])].slice(0, 10);
         audit('Mensagem preparada no WhatsApp para ' + c.name + (ctx.context ? ' · ' + ctx.context : ''));
         if (!['error', 'conflict', 'loading'].includes(syncStatus)) persist('WhatsApp aberto com a mensagem. Confira e envie por lá.');
         waClose();
@@ -1101,8 +1130,8 @@ document.addEventListener('click', async (e) => {
     if (a === 'wa-bill') waBill(id);
     if (a === 'wa-followup') waFollowup(id);
     if (a === 'wa-client') waComposer(id, waMessages.free({ name: client(id).name }));
-    if (a === 'wa-quote') { const f = target.closest('dialog')?.querySelector('form'), q = f?.elements.question.value || ''; if (!q.trim()) toast('Escreva as perguntas antes de enviar.'); else waComposer(f.elements.clientId.value, waMessages.quote({ name: client(f.elements.clientId.value).name, service: service(f.elements.serviceId.value).name, questions: q }), { context: 'Perguntas do orçamento' }); }
-    if (a === 'wa-draft') { const v = state.conversations.find(v => v.id === id), text = target.closest('dialog')?.querySelector('form')?.elements.text.value || ''; if (v) waComposer(v.clientId, text, { context: 'Rascunho da conversa', onOpen: t => { v.draft = t; } }); }
+    if (a === 'wa-quote') { const f = target.closest('dialog')?.querySelector('form'), q = f?.elements.question.value || ''; if (!q.trim()) toast('Escreva as perguntas antes de enviar.'); else waComposer(f.elements.clientId.value, waMessages.quote({ name: client(f.elements.clientId.value).name, service: service(f.elements.serviceId.value).name, questions: q }), { title: 'Orçamento pelo WhatsApp', context: 'Perguntas do orçamento' }); }
+    if (a === 'wa-draft') { const v = state.conversations.find(v => v.id === id), text = target.closest('dialog')?.querySelector('form')?.elements.text.value || ''; if (v) waComposer(v.clientId, text, { title: 'Rascunho pelo WhatsApp', context: 'Rascunho da conversa', onOpen: t => { v.draft = t; } }); }
     if (a === 'quick-client-toggle') { const box = target.closest('[data-quick-client]'); setQuickClient(box, box.querySelector('.quick-client-new').hidden); }
     if (a === 'quick-client-save') saveQuickClient(target.closest('[data-quick-client]'));
     if (a === 'quick-client-use') pickQuickClient(target.closest('[data-quick-client]'), id);
