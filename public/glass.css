@@ -34,16 +34,21 @@
   --shadow: 0 1px 2px rgba(30, 20, 60, .04), 0 8px 24px -12px rgba(45, 25, 90, .12);
 
   /* receita do vidro */
-  --glass-bg: linear-gradient(180deg, rgba(255, 255, 255, .74), rgba(255, 255, 255, .56));
+  --glass-bg: linear-gradient(135deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, .08) 38%, rgba(255, 255, 255, 0) 62%, rgba(255, 255, 255, .22)), linear-gradient(180deg, rgba(255, 255, 255, .64), rgba(255, 255, 255, .46));
+  --glass-tint: rgba(255, 255, 255, .46);
+  --glass-tint-edge: rgba(255, 255, 255, .7);
+  --row-hover: rgba(110, 67, 179, .05);
+  --field-bg: rgba(255, 255, 255, .86);
   --glass-edge: rgba(255, 255, 255, .78);
   --glass-shine: inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 0 0 1px rgba(255, 255, 255, .25);
   --glass-drop: 0 1px 1px rgba(30, 20, 60, .03), 0 18px 40px -22px rgba(60, 30, 120, .28);
   --glass-blur: blur(22px) saturate(170%);
 
   /* luz ambiente atrás do vidro */
-  --aura-1: rgba(140, 92, 230, .22);
+  --aura-1: rgba(140, 92, 230, .26);
   --aura-2: rgba(236, 120, 160, .14);
   --aura-3: rgba(90, 140, 240, .10);
+  --aura-4: rgba(170, 120, 240, .16);
 }
 :root[data-theme="dark"] {
   --bg: #0e0d12;
@@ -75,7 +80,11 @@
   --scroll-hover: #554d66;
   --scroll-active: #7650c9;
 
-  --glass-bg: linear-gradient(180deg, rgba(34, 31, 45, .62), rgba(20, 18, 27, .52));
+  --glass-bg: linear-gradient(135deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .015) 38%, rgba(255, 255, 255, 0) 62%, rgba(255, 255, 255, .03)), linear-gradient(180deg, rgba(30, 27, 40, .66), rgba(18, 16, 25, .58));
+  --glass-tint: rgba(255, 255, 255, .035);
+  --glass-tint-edge: rgba(255, 255, 255, .07);
+  --row-hover: rgba(255, 255, 255, .035);
+  --field-bg: rgba(8, 7, 12, .5);
   --glass-edge: rgba(255, 255, 255, .07);
   --glass-shine: inset 0 1px 0 rgba(255, 255, 255, .08), inset 0 0 0 1px rgba(255, 255, 255, .02);
   --glass-drop: 0 24px 48px -24px rgba(0, 0, 0, .8);
@@ -84,18 +93,24 @@
   --aura-1: rgba(118, 80, 201, .20);
   --aura-2: rgba(200, 80, 140, .08);
   --aura-3: rgba(60, 90, 200, .07);
+  --aura-4: rgba(118, 80, 201, .10);
 }
 
 /* ---------- Fundo com luz ambiente (dá o que o vidro refratar) ---------- */
 html { background: var(--bg); }
-html body {
+html body { background: var(--bg); color: var(--ink); }
+/* Luz ambiente numa camada fixa: funciona igual no iPhone (sem background-attachment) e não "corta" ao rolar. */
+html body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background:
     radial-gradient(900px 600px at 88% -8%, var(--aura-1), transparent 60%),
     radial-gradient(700px 520px at -6% 92%, var(--aura-2), transparent 62%),
     radial-gradient(600px 480px at 46% 52%, var(--aura-3), transparent 65%),
-    var(--bg);
-  background-attachment: fixed;
-  color: var(--ink);
+    radial-gradient(800px 500px at 70% 110%, var(--aura-4), transparent 65%);
 }
 
 /* ---------- Receita do vidro ---------- */
@@ -116,7 +131,10 @@ html .dataset-banner {
 }
 html .sidebar { border-width: 0 1px 0 0; box-shadow: var(--glass-shine); }
 html .topbar { border-width: 0 0 1px; box-shadow: none; }
-html .dataset-banner { border-radius: 14px; }
+html .dataset-banner { border-radius: 14px; padding: 12px 14px 12px 16px; margin: 0 0 22px; align-items: center; gap: 12px; }
+html .dataset-banner .btn { margin: 0; flex-shrink: 0; padding: 8px 12px; border-radius: 9px; }
+html .dataset-banner .btn:hover { background: var(--accent-soft); }
+@media (max-width: 640px) { html .dataset-banner { padding: 10px 12px; margin-bottom: 18px; } }
 html dialog { border-radius: 22px; }
 html dialog::backdrop { background: rgba(14, 10, 24, .32); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 :root[data-theme="dark"] dialog::backdrop { background: rgba(0, 0, 0, .55); }
@@ -124,17 +142,41 @@ html dialog .dialog-head, html dialog .dialog-footer { background: transparent; 
 /* Dentro da janela o conteúdo é lido: os campos ficam sólidos. */
 html dialog input, html dialog select, html dialog textarea { background: var(--surface-solid); }
 
-/* Cartões de leitura (tabelas, listas, formulários): sólidos, com borda fina e hierarquia de raio. */
-html .card { background: var(--surface-solid); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
-html .card .card { box-shadow: none; }
-html .stat, html .attention-card, html .chart-card { border-radius: 18px; }
+/* Todas as superfícies de conteúdo em vidro: cartões, guias, abas e o login. */
+html .card, html .page-guide, html .more-metrics, html .agenda-summary-link, html .stat-link, html .login {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius);
+  box-shadow: var(--glass-shine), var(--glass-drop);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+html .login { border-radius: 26px; }
+/* Dentro de um vidro não se desfoca de novo: só um véu translúcido (mais leve e sem "vidro sobre vidro"). */
+html .card .card, html dialog .card, html .notice, html .segmented, html .bubble, html .draft-box, html .summary-box, html .quote-note,
+html .detail-metrics, html .schedule-body, html .consultation-banner, html .history-item, html .task-row, html .search-result, html .theme-control,
+html .wa-ctx-item, html .calendar-toolbar, html .records-pagination {
+  background: var(--glass-tint);
+  border-color: var(--glass-tint-edge);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html .notice.red { background: var(--red-soft); border-color: color-mix(in srgb, var(--red) 25%, transparent); }
+html .data-table, html .data-table thead, html .data-table th, html .data-table tr, html .data-table td { background: transparent; }
+html .data-table tbody tr:hover { background: var(--row-hover); }
+html .card input:not([type=checkbox]):not([type=radio]), html .card select, html .card textarea,
+html .toolbar input:not([type=checkbox]):not([type=radio]), html .toolbar select, html .period-toolbar input, html .page-guide input { background: var(--field-bg); }
+html .segmented button.active, html .segmented [aria-pressed="true"] { background: var(--surface-solid); box-shadow: 0 1px 2px rgba(20, 10, 40, .14); }
+:root[data-theme="dark"] .segmented button.active, :root[data-theme="dark"] .segmented [aria-pressed="true"] { background: rgba(255, 255, 255, .09); }
+html .stat, html .attention-card, html .chart-card, html .stat-link { border-radius: 18px; }
 
 /* Sem suporte ou com transparência reduzida: tudo sólido. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  html .sidebar, html .topbar, html .mobile-bottom-nav, html dialog, html .search-modal, html .stat, html .attention-card, html .chart-card, html .dataset-banner { background: var(--surface-solid); }
+  html .sidebar, html .topbar, html .mobile-bottom-nav, html dialog, html .search-modal, html .stat, html .attention-card, html .chart-card, html .dataset-banner, html .card, html .page-guide, html .more-metrics, html .agenda-summary-link, html .stat-link, html .login { background: var(--surface-solid); }
 }
 @media (prefers-reduced-transparency: reduce) {
-  html .sidebar, html .topbar, html .mobile-bottom-nav, html dialog, html .search-modal, html .stat, html .attention-card, html .chart-card, html .dataset-banner { background: var(--surface-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  html .sidebar, html .topbar, html .mobile-bottom-nav, html dialog, html .search-modal, html .stat, html .attention-card, html .chart-card, html .dataset-banner, html .card, html .page-guide, html .more-metrics, html .agenda-summary-link, html .stat-link, html .login { background: var(--surface-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 
 /* ---------- Navegação ---------- */
@@ -239,3 +281,8 @@ html .input-wrap .icon { top: 50%; left: 14px; transform: translateY(-50%); poin
 html #main .eyebrow { text-transform: none; letter-spacing: 0; font-size: 12px; }
 :root[data-theme="dark"] .atelier-welcome::before { opacity: .35; }
 html .page-kicker { letter-spacing: 0; font-size: 12px; }
+
+html .setting-row { background: transparent; }
+html [data-salon-logout] { text-decoration: none; }
+/* Celular: o filtro da lista ganha a linha inteira em vez de ficar espremido. */
+@media (max-width: 640px) { html #main .toolbar { flex-wrap: wrap; } html #main .toolbar > select { flex: 1 1 100%; width: 100%; } }
