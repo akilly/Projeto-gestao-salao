@@ -14,7 +14,7 @@ import { createWhatsAppUI } from './whatsapp.js';
 import { attendanceSummary, previousConsumption, ensureSpaceExpense, rollMonth } from './routine.js?v=records-1';
 import { preferredTheme, applyTheme } from './theme.js';
 import { blankState, stockOf, metrics, periodOf, closeAttendance, paymentEntries, billBalance, billPaid, availableDeposits, cardMethod, METHODS, cents, amount, qty, validateState, retainDeposit } from './domain.js';
-import { localDate, dayOffset, minutes, clock, appointmentConflict, balanceFor, receivedFor, parseCSV, csvCell } from './core.js';
+import { localDate, dayOffset, minutes, clock, appointmentConflict, appointmentConflicts, balanceFor, receivedFor, parseCSV, csvCell } from './core.js';
 // Catálogo SVG local; coordenadas são dados visuais e não regras de negócio.
 const icons = { grid: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z', chat: 'M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0 1 19 0Z M7 10h9 M7 14h5', calendar: 'M5 5h14a2 2 0 0 1 2 2v13H3V7a2 2 0 0 1 2-2Z M7 3v4 M17 3v4 M3 10h18 M7 14h2 M13 14h3 M7 17h2', users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M17 4a4 4 0 0 1 0 7 M22 21v-2a4 4 0 0 0-3-3.87', scissors: 'M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M6 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M8.1 7.1 21 20 M8.1 16.9 21 4 M12 12h.01', wallet: 'M21 8H5a2 2 0 0 1 0-4h14v4 M3 6v13a2 2 0 0 0 2 2h16V8 M21 12h-6v5h6 M17 14.5h.01', file: 'M14 2H5v20h14V7Z M14 2v6h5 M8 12h8 M8 16h6', checklist: 'M9 5h12 M9 12h12 M9 19h12 M2 4l2 2 3-3 M2 11l2 2 3-3 M2 18l2 2 3-3', settings: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M10 2h4l1 3 3 1 3-1 2 4-2 3v2l2 3-2 4-3-1-3 1-1 3h-4l-1-3-3-1-3 1-2-4 2-3v-2L1 9l2-4 3 1 3-1Z', help: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20 M9 9a3 3 0 1 1 5 2c-2 1-2 1-2 3 M12 17h.01', search: 'M21 21l-5-5 M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16', bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9 M10 21h4', plus: 'M12 5v14 M5 12h14', arrow: 'M5 12h14 M14 7l5 5-5 5', chevron: 'm9 5 7 7-7 7', left: 'm15 5-7 7 7 7', down: 'm6 9 6 6 6-6', clock: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20 M12 6v6l4 2', moon: 'M20.8 13A9 9 0 0 1 11 3.2 9 9 0 1 0 20.8 13Z', sun: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M12 2v2 M12 20v2 M2 12h2 M20 12h2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M4.9 19.1l1.4-1.4 M17.7 6.3l1.4-1.4', spark: 'm12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z M20 2v4 M18 4h4', shield: 'm12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6Z M8 12l3 3 5-6', leaf: 'M20 3C9 2 2 6 4 14c2 7 16 7 16-11Z M4 20 16 8', check: 'm5 12 4 4L19 6', download: 'M12 3v12 M7 10l5 5 5-5 M4 17v4h16v-4', upload: 'M12 16V4 M7 9l5-5 5 5 M4 17v4h16v-4', close: 'm6 6 12 12 M6 18 18 6', edit: 'm15 4 5 5 M4 16l-1 5 5-1L21 7a2.8 2.8 0 0 0-4-4Z', copy: 'M8 8h13v13H8z M16 8V3H3v13h5', info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20 M12 11v6 M12 7h.01', warning: 'M12 3 1 21h22Z M12 9v5 M12 17h.01', dots: 'M5 12h.01 M12 12h.01 M19 12h.01', menu: 'M3 6h18 M3 12h18 M3 18h18', coffee: 'M3 8h14v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z M17 8h2a3 3 0 0 1 0 6h-2 M7 2v3 M12 2v3', lock: 'M5 10h14v12H5z M8 10V6a4 4 0 0 1 8 0v4', link: 'm10 14 4-4 M8 16l-2 2a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0 M16 8l2-2a4 4 0 0 1 6 6l-5 5a4 4 0 0 1-6 0', image: 'M3 3h18v18H3Z m3 14 4-5 4 4 3-3 4 4 M8 7h.01', heart: 'M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z', print: 'M6 8V2h12v6 M6 17H3V8h18v9h-3 M6 13h12v9H6Z', undo: 'M3 3v6h6 M3 9a9 9 0 1 1 0 6' };
 /**
@@ -412,7 +412,7 @@ function dayRibbon() { const day = new Date(ui.date + 'T12:00:00').getDay(), sta
 function scheduleRow(a) {
     const c = client(a.clientId), target = { page: 'agenda', date: a.date, appointment: a.id }, end = clock(minutes(a.time) + a.duration);
     const canFinish = a.clientId && a.date <= localDate() && !['blocked', 'completed', 'cancelled', 'absent'].includes(a.status) && !state.records.some(r => r.appointmentId === a.id);
-    return `<div class="schedule-row ${a.status === 'blocked' ? 'is-pause' : ''}">${destinationLink(a.time + '<small>' + end + '</small>', target, 'schedule-time', 'Ver horário ' + a.time)}<span class="schedule-marker"></span>${destinationLink(`<div><strong>${esc(a.label || c.name)}</strong><p>${esc(a.status === 'blocked' ? 'Um intervalo para recarregar.' : service(a.serviceId).name)}</p></div>${a.status === 'blocked' ? '' : pill(statusLabel[a.status], a.status === 'pending' ? 'orange' : 'green')}`, target, 'schedule-body')}${canFinish ? btn('Concluir', 'new-record', 'check', 'text schedule-finish', `data-appointment="${a.id}" aria-label="Concluir atendimento de ${esc(c.name)}"`) : ''}</div>`;
+    return `<div class="schedule-row ${a.status === 'blocked' ? 'is-pause' : ''}">${destinationLink(a.time + '<small>' + end + '</small>', target, 'schedule-time', 'Ver horário ' + a.time)}<span class="schedule-marker"></span>${destinationLink(`<div><strong>${esc(a.label || c.name)}</strong><p>${esc(a.status === 'blocked' ? 'Um intervalo para recarregar.' : service(a.serviceId).name)}</p></div><span class="schedule-pills">${overlapPill(a)}${a.status === 'blocked' ? '' : pill(statusLabel[a.status], a.status === 'pending' ? 'orange' : 'green')}</span>`, target, 'schedule-body')}${canFinish ? btn('Concluir', 'new-record', 'check', 'text schedule-finish', `data-appointment="${a.id}" aria-label="Concluir atendimento de ${esc(c.name)}"`) : ''}</div>`;
 }
 /**
  * clientsPage — Renderiza clientes conforme busca, filtro e modo de visualização.
@@ -432,7 +432,7 @@ function manualConversationsPage() { const convs = state.conversations.filter(v 
 /**
  * agendaPage — Renderiza a agenda diária ou de cinco dias.
  */
-function agendaPage() { const date = ui.date; return `${heading('Agenda', 'Consulte os horários, confirme visitas e registre novos agendamentos.', btn('Importar CSV', 'import', 'upload', 'secondary', 'data-kind="appointments"') + btn('Bloquear horário', 'new-block', 'lock', 'secondary') + btn('Agendar', 'new-appointment', 'plus', 'primary'))}${agendaOverview(date)}${ui.agendaStatus ? `<div class="consultation-banner"><span>${ui.agendaStatus === 'completed' ? 'Agendamentos concluídos' : 'Visitas em aberto'}</span>${destinationLink('Ver agenda completa', { page: 'agenda', date }, 'btn text')}</div>` : ''}${dayRibbon()}<section class="card agenda-timeline"><div class="calendar-toolbar"><div class="row gap6">${iconBtn('left', 'agenda-prev', 'Período anterior')}<strong>${ui.agendaView === 'day' ? longDate(date) : `${fmt(date)} — ${fmt(dayOffset(4, date))}`}</strong>${iconBtn('chevron', 'agenda-next', 'Próximo período')}${btn('Hoje', 'agenda-today', '', 'secondary sm')}</div><div class="row gap8"><input type="date" value="${date}" data-change="agenda-date" aria-label="Selecionar data" class="agenda-date-input"><div class="segmented">${[['day', 'Dia'], ['week', '5 dias']].map(([val, t]) => `<button data-action="agenda-view" data-id="${val}" class="${ui.agendaView === val ? 'active' : ''}">${t}</button>`).join('')}</div></div></div>${ui.agendaView === 'day' ? `<div class="agenda-day">${agendaEntries(date).map(scheduleRow).join('') || empty('A agenda está livre.', 'Registre um atendimento ou bloqueie um horário.', 'calendar')}</div>` : `<div class="calendar-columns">${Array.from({ length: 5 }, (_, i) => { const d = dayOffset(i, date); return `<div class="calendar-day ${d === localDate() ? 'today' : ''}"><div class="calendar-day-heading">${fmt(d, { weekday: 'long' })}<b>${Number(d.slice(-2))}</b></div>${agendaEntries(d).map(a => `<button class="appointment-block ${a.status}" data-action="appointment-detail" data-id="${a.id}"><div class="atime">${a.time} — ${clock(minutes(a.time) + a.duration)}</div><strong>${esc(a.label || client(a.clientId).name)}</strong><p>${esc(a.status === 'blocked' ? 'Bloqueio de horário' : service(a.serviceId).name)}</p></button>`).join('')}<button class="free-slot" data-action="new-appointment" data-date="${d}">+ Registrar atendimento</button></div>`; }).join('')}</div>`}</section><div class="view-grid section-gap"><div class="notice">${icon('info')}Todo agendamento é manual. O sistema considera duração, intervalo e bloqueios para evitar conflitos.</div><div class="notice">Funcionamento: ${state.settings.open} às ${state.settings.close}</div></div><div class="card section-gap"><header class="card-head"><div><h2>Disponibilidade do dia</h2><p class="sub">Sugestões para corte de 60 min + 15 min de intervalo. Não reservam horário.</p></div></header><div style="padding:0 22px 22px"><div class="available-list">${availableSlots(date, 60, 15).map(t => `<span>${t}</span>`).join('') || '<span>Nenhum horário livre neste dia.</span>'}</div></div></div>`; }
+function agendaPage() { const date = ui.date; return `${heading('Agenda', 'Consulte os horários, confirme visitas e registre novos agendamentos.', btn('Importar CSV', 'import', 'upload', 'secondary', 'data-kind="appointments"') + btn('Bloquear horário', 'new-block', 'lock', 'secondary') + btn('Agendar', 'new-appointment', 'plus', 'primary'))}${agendaOverview(date)}${ui.agendaStatus ? `<div class="consultation-banner"><span>${ui.agendaStatus === 'completed' ? 'Agendamentos concluídos' : 'Visitas em aberto'}</span>${destinationLink('Ver agenda completa', { page: 'agenda', date }, 'btn text')}</div>` : ''}${dayRibbon()}<section class="card agenda-timeline"><div class="calendar-toolbar"><div class="row gap6">${iconBtn('left', 'agenda-prev', 'Período anterior')}<strong>${ui.agendaView === 'day' ? longDate(date) : `${fmt(date)} — ${fmt(dayOffset(4, date))}`}</strong>${iconBtn('chevron', 'agenda-next', 'Próximo período')}${btn('Hoje', 'agenda-today', '', 'secondary sm')}</div><div class="row gap8"><input type="date" value="${date}" data-change="agenda-date" aria-label="Selecionar data" class="agenda-date-input"><div class="segmented">${[['day', 'Dia'], ['week', '5 dias']].map(([val, t]) => `<button data-action="agenda-view" data-id="${val}" class="${ui.agendaView === val ? 'active' : ''}">${t}</button>`).join('')}</div></div></div>${ui.agendaView === 'day' ? `<div class="agenda-day">${agendaEntries(date).map(scheduleRow).join('') || empty('A agenda está livre.', 'Registre um atendimento ou bloqueie um horário.', 'calendar')}</div>` : `<div class="calendar-columns">${Array.from({ length: 5 }, (_, i) => { const d = dayOffset(i, date); return `<div class="calendar-day ${d === localDate() ? 'today' : ''}"><div class="calendar-day-heading">${fmt(d, { weekday: 'long' })}<b>${Number(d.slice(-2))}</b></div>${agendaEntries(d).map(a => `<button class="appointment-block ${a.status}" data-action="appointment-detail" data-id="${a.id}"><div class="atime">${a.time} — ${clock(minutes(a.time) + a.duration)}</div><strong>${esc(a.label || client(a.clientId).name)}</strong><p>${esc(a.status === 'blocked' ? 'Bloqueio de horário' : service(a.serviceId).name)}</p>${overlapPill(a)}</button>`).join('')}<button class="free-slot" data-action="new-appointment" data-date="${d}">+ Registrar atendimento</button></div>`; }).join('')}</div>`}</section><div class="view-grid section-gap"><div class="notice">${icon('info')}Todo agendamento é manual. O sistema considera duração, intervalo e bloqueios e avisa quando o horário já está ocupado. Dois atendimentos ao mesmo tempo só ficam com a sua confirmação.</div><div class="notice">Funcionamento: ${state.settings.open} às ${state.settings.close}</div></div><div class="card section-gap"><header class="card-head"><div><h2>Disponibilidade do dia</h2><p class="sub">Sugestões para corte de 60 min + 15 min de intervalo. Não reservam horário.</p></div></header><div style="padding:0 22px 22px"><div class="available-list">${availableSlots(date, 60, 15).map(t => `<span>${t}</span>`).join('') || '<span>Nenhum horário livre neste dia.</span>'}</div></div></div>`; }
 /**
  * availableSlots — Calcula sugestões de horários respeitando expediente, dias fechados e conflitos com intervalo.
  */
@@ -906,7 +906,30 @@ function importModal(kind) { importCandidate = null; openForm('Importar com cuid
 /**
  * validateAppointment — Valida expediente, folgas, duração e conflitos antes de alterar a agenda.
  */
-function validateAppointment(candidate, ignoreId) { return validateBookingSlot(state, candidate, ignoreId); }
+function validateAppointment(candidate, ignoreId, opts) { return validateBookingSlot(state, candidate, ignoreId, opts); }
+/* ---------- Horários sobrepostos com confirmação ---------- */
+/** A profissional marcou que está ciente dos dois horários? */
+const overlapConfirmed = form => !!form?.querySelector?.('[name="overlapConfirmed"]')?.checked;
+/** Mostra, dentro do formulário, quem já está no horário e pede a confirmação explícita. */
+function showOverlapConfirm(form, hits) {
+    if (!form || !hits?.length) return;
+    form.querySelector('#overlap-confirm')?.remove();
+    const html = `<div id="overlap-confirm" class="notice orange full overlap-confirm" role="group" aria-labelledby="overlap-title"><strong id="overlap-title">${icon('warning')}${hits.length === 1 ? 'Já tem uma cliente nesse horário' : 'Já tem atendimentos nesse horário'}</strong><ul>${hits.map(h => `<li><b>${esc(h.name)}</b>${h.service ? ' · ' + esc(h.service) : ''} · ${esc(h.time)}${h.end ? '–' + esc(h.end) : ''}</li>`).join('')}</ul><label class="row"><input type="checkbox" name="overlapConfirmed">Estou ciente dos dois horários e quero manter ${hits.length === 1 ? 'os dois atendimentos' : 'todos os atendimentos'} ao mesmo tempo.</label></div>`;
+    const grid = form.querySelector('.form-grid') || form.querySelector('.dialog-body');
+    grid.insertAdjacentHTML('beforeend', html);
+    form.querySelector('#overlap-confirm').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    form.querySelector('[name="overlapConfirmed"]').focus();
+}
+/** Guarda a marca de horário compartilhado só enquanto houver sobreposição de fato. */
+function settleOverlap(a, list) { if (appointmentConflicts(list, a, a.id).length) a.allowOverlap = true; else delete a.allowOverlap; }
+/** Pílula na agenda para lembrar que o horário é compartilhado. */
+function overlapPill(a) {
+    if (['cancelled', 'absent'].includes(a.status)) return '';
+    const hits = appointmentConflicts(state.appointments, a, a.id);
+    if (!hits.length) return '';
+    const names = hits.map(h => h.status === 'blocked' ? (h.label || 'bloqueio') : client(h.clientId).name).join(', ');
+    return `<span class="pill orange overlap-pill" title="${esc('Mesmo horário que ' + names)}">${icon('users')}Horário compartilhado</span>`;
+}
 
 /**
  * alerts — Monta alertas internos do painel; não produz notificações externas.
@@ -1300,6 +1323,7 @@ document.addEventListener('submit', async (e) => {
         if (kind === 'appointment' || kind === 'block') {
             const data = { date: val('date'), time: val('time'), duration: Number(val('duration')), buffer: Number(val('buffer')), note: val('note'), status: kind === 'block' ? 'blocked' : val('status'), ...(kind === 'block' ? { clientId: null, serviceId: null, label: val('label') } : { clientId: val('clientId'), serviceId: val('serviceId') }) };
             const isNew = kind === 'appointment' && val('clientMode') === 'new';
+            if (overlapConfirmed(form) && appointmentConflicts(state.appointments, data).length) data.allowOverlap = true;
             const result = createBooking(state, data, { appointmentId: uid(), clientId: isNew ? uid() : undefined, contact: isNew ? { name: val('newClientName'), phone: val('newClientPhone'), status: val('newClientStatus') } : null });
             state = result.state;
             ui.date = data.date;
@@ -1307,17 +1331,19 @@ document.addEventListener('submit', async (e) => {
             message = kind === 'block' ? 'Período bloqueado por você.' : isNew ? 'Cliente cadastrada e agendamento confirmado.' : 'Agendamento registrado por você.';
         }
         if (kind === 'reschedule') {
-            const a = state.appointments.find(a => a.id === id), before = { ...a }, data = { ...a, date: val('date'), time: val('time') };
+            const a = state.appointments.find(a => a.id === id), before = { ...a }, data = { ...a, date: val('date'), time: val('time'), allowOverlap: overlapConfirmed(form) };
             validateAppointment(data, id);
             Object.assign(a, data, { status: a.status === 'cancelled' || a.status === 'absent' ? 'pending' : a.status });
+            settleOverlap(a, state.appointments);
             audit('Atendimento remarcado manualmente', before, { ...a });
             message = 'Horário atualizado. Nenhuma mensagem foi enviada.';
         }
         if (kind === 'appointment-status') {
             const a = state.appointments.find(a => a.id === id), before = { ...a }, status = val('status');
             if (!['cancelled', 'absent'].includes(status))
-                validateAppointment(a, id);
+                validateAppointment({ ...a, allowOverlap: a.allowOverlap === true || overlapConfirmed(form) }, id);
             a.status = status;
+            if (!['cancelled', 'absent'].includes(status)) settleOverlap(a, state.appointments);
             a.note = val('note');
             audit('Situação de atendimento confirmada', before, { ...a });
             message = 'Situação atualizada por você.';
@@ -1485,6 +1511,7 @@ document.addEventListener('submit', async (e) => {
         }
     }
     catch (err) {
+        if (err.overlap) showOverlapConfirm(form, err.overlap);
         if (error) {
             error.textContent = err.message;
             error.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -2654,8 +2681,10 @@ document.addEventListener('submit', e => {
             if (!a || a.status === 'completed') throw Error('Agendamento não encontrado ou já concluído.');
             const candidate = { ...a, clientId: v('clientId'), serviceId: v('serviceId'), date: v('date'), time: v('time'), duration: Number(v('duration')), buffer: Number(v('buffer')), note: v('note') };
             if (!next.clients.some(c => c.id === candidate.clientId) || !next.services.some(s => s.id === candidate.serviceId)) throw Error('Escolha uma cliente e um serviço válidos.');
+            candidate.allowOverlap = overlapConfirmed(form);
             if (!['cancelled', 'absent'].includes(a.status)) validateBookingSlot(next, candidate, id);
             Object.assign(a, candidate);
+            settleOverlap(a, next.appointments);
             if (next.records.some(r => r.appointmentId === id)) throw Error('Este agendamento já tem atendimento registrado.');
             action = 'Agendamento corrigido'; message = 'Agendamento corrigido. Nenhuma mensagem foi enviada.';
         }
@@ -2669,6 +2698,7 @@ document.addEventListener('submit', e => {
         }
     }
     catch (err) {
+        if (err.overlap) showOverlapConfirm(form, err.overlap);
         if (error) {
             error.textContent = err.message;
             error.scrollIntoView({ block: 'nearest' });
@@ -2801,3 +2831,6 @@ document.addEventListener('submit', e => {
 
 /** Enter na senha confirma a exclusão. */
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'delete-password') { e.preventDefault(); document.querySelector('#dialog [data-action="v12-delete-apply"]')?.click(); } });
+
+/** Mudou data, horário ou duração: a confirmação anterior não vale para o novo horário. */
+document.addEventListener('input', e => { if (['date', 'time', 'duration', 'buffer'].includes(e.target.name)) e.target.form?.querySelector('#overlap-confirm')?.remove(); });

@@ -3,7 +3,7 @@ import { deletionBlock, removableCollections } from './deletion.js';
  * Regras de negócio compartilhadas entre navegador e API. Valores monetários são arredondados em centavos; quantidades em três casas. null em custo ou taxa significa informação pendente, nunca zero presumido.
  * Referências: docs/DOCUMENTACAO_TECNICA.md e docs/REFERENCIA_FUNCOES.md.
  */
-import { demoState, localDate, dayOffset, appointmentConflict } from './core.js';
+import { demoState, localDate, dayOffset, appointmentConflicts } from './core.js';
 /**
  * cents — Converte reais em centavos inteiros para arredondamento monetário.
  */
@@ -305,8 +305,11 @@ export function validateState(s, previous = null) {
     for (const a of s.appointments) {
         if (!date(a.date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time) || !positive(a.duration) || !nonnegative(a.buffer) || (a.clientId && !has('clients', a.clientId)) || (a.serviceId && !has('services', a.serviceId)))
             fail('Agendamento inválido.');
-        if (appointmentConflict(s.appointments, a, a.id) && !['cancelled', 'absent'].includes(a.status))
+        // Sobreposição só vale quando um dos dois horários foi confirmado pela profissional como compartilhado.
+        if (!['cancelled', 'absent'].includes(a.status) && appointmentConflicts(s.appointments, a, a.id).some(h => a.allowOverlap !== true && h.allowOverlap !== true))
             fail('Conflito entre agendamentos.');
+        if (a.allowOverlap !== undefined && typeof a.allowOverlap !== 'boolean')
+            fail('Agendamento inválido.');
     }
     if (previous) for (const collection of removableCollections) for (const old of previous[collection]) {
         if (!s[collection].some(x => x.id === old.id)) {

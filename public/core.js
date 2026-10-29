@@ -22,8 +22,12 @@ export const clock = n => `${String(Math.floor(n / 60)).padStart(2, '0')}:${Stri
  * appointmentConflict — Retorna o primeiro compromisso sobreposto na mesma data, incluindo o intervalo; ignora o próprio ID, cancelamentos e faltas.
  */
 export function appointmentConflict(items, candidate, ignoreId) {
+    return appointmentConflicts(items, candidate, ignoreId)[0];
+}
+/** Todos os compromissos que se sobrepõem ao candidato (mesma regra de appointmentConflict). */
+export function appointmentConflicts(items, candidate, ignoreId) {
     const start = minutes(candidate.time), end = start + Number(candidate.duration) + Number(candidate.buffer || 0);
-    return items.find(a => a.id !== ignoreId && a.date === candidate.date && !['cancelled', 'absent'].includes(a.status) && start < minutes(a.time) + Number(a.duration) + Number(a.buffer || 0) && end > minutes(a.time));
+    return items.filter(a => a.id !== ignoreId && a.date === candidate.date && !['cancelled', 'absent'].includes(a.status) && start < minutes(a.time) + Number(a.duration) + Number(a.buffer || 0) && end > minutes(a.time));
 }
 /**
  * receivedFor — Soma valores aceitos ligados à cobrança no modelo legado; não mede entrada efetiva de caixa de cartão.
