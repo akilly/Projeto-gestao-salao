@@ -10,7 +10,9 @@
     2. Copia o conector para C:\HanneWhatsApp e instala as dependências.
     3. Cria a configuração (.env) com uma chave nova (ou mantém a existente).
     4. Registra a tarefa "Hanne WhatsApp", que inicia com o Windows e reinicia se cair.
-    5. Publica o endereço HTTPS fixo pelo Tailscale Funnel e confere a resposta.
+    5. Confere se o conector consegue falar com o ateliê e copia a chave para colar no site.
+
+  Não abre porta nem precisa de túnel ou domínio: o conector é quem chama o site.
   Reexecutar atualiza o código e preserva a chave e a sessão do WhatsApp.
 #>
 param(
@@ -78,7 +80,8 @@ if (-not $chave) {
   Ok 'Chave nova gerada.'
 }
 New-Item -ItemType Directory -Force -Path $dados | Out-Null
-@("BRIDGE_KEY=$chave", "SITE_ORIGIN=$Site", 'PORT=3100', 'HOST=127.0.0.1', "DATA_DIR=$dados") | Set-Content -Path $envFile -Encoding ascii
+Remove-Item (Join-Path $dados 'status.json') -ErrorAction SilentlyContinue
+@("BRIDGE_KEY=$chave", "SITE_ORIGIN=$Site", "DATA_DIR=$dados") | Set-Content -Path $envFile -Encoding ascii
 # Só Administradores e o sistema leem a chave e a sessão do WhatsApp.
 & icacls $Destino /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' /T /Q | Out-Null
 Ok "Configuração salva para o ateliê $Site"
@@ -91,13 +94,21 @@ $ajustes = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoin
 $conta = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
 Register-ScheduledTask -TaskName $Tarefa -Action $acao -Trigger $gatilho -Settings $ajustes -Principal $conta -Description 'Conector WhatsApp (Baileys) do ateliê Hanne' -Force | Out-Null
 Start-ScheduledTask -TaskName $Tarefa
-$local = $false
-for ($i = 0; $i -lt 20 -and -not $local; $i++) {
+
+Passo 'Conferindo a comunicação com o ateliê'
+# O conector grava data\status.json a cada ciclo. "Chave não cadastrada" já prova que o site respondeu.
+$statusFile = Join-Path $dados 'status.json'
+$estado = $null
+for ($i = 0; $i -lt 30; $i++) {
   Start-Sleep -Seconds 2
-  try { $r = Invoke-RestMethod -Uri 'http://127.0.0.1:3100/health' -Headers @{ Authorization = "Bearer $chave" } -TimeoutSec 5; $local = $r.service -eq 'hanne-baileys' } catch { }
+  try { $estado = Get-Content $statusFile -Raw -Encoding UTF8 | ConvertFrom-Json } catch { $estado = $null }
+  if ($estado -and ($estado.lastSync -or $estado.lastError)) { break }
 }
-if (-not $local) { throw "O conector não respondeu. Veja o log em $dados\logs\conector.log e rode .\windows\status.ps1." }
-Ok 'Conector rodando neste computador (porta 3100).'
+if (-not $estado) { throw "O conector não iniciou. Veja o log em $dados\logs\conector.log e rode .\windows\status.ps1." }
+if ($estado.lastSync) { Ok 'O ateliê já reconhece esta chave.' }
+elseif ($estado.lastError -eq 'Chave não cadastrada') { Ok 'O ateliê respondeu. Falta só colar a chave no site (abaixo).' }
+elseif ($estado.lastError -like 'HTTP 404*') { Write-Warning "O endereço $Site respondeu, mas sem a integração do WhatsApp. Confira se o site publicado é a versão mais recente." }
+else { Write-Warning "Ainda não consegui falar com $Site ($($estado.lastError)). Confira o endereço e a internet; o conector continua tentando sozinho." }
 
 if ($ManterLigado) {
   Passo 'Impedindo a suspensão na tomada'
@@ -106,32 +117,12 @@ if ($ManterLigado) {
   Ok 'O computador não vai mais dormir quando estiver na tomada.'
 }
 
-Passo 'Publicando o endereço HTTPS fixo (Tailscale Funnel)'
-$ts = (Get-Command tailscale -ErrorAction SilentlyContinue).Source
-if (-not $ts -and (Test-Path 'C:\Program Files\Tailscale\tailscale.exe')) { $ts = 'C:\Program Files\Tailscale\tailscale.exe' }
-if (-not $ts) {
-  Write-Warning 'Tailscale não encontrado. Instale em https://tailscale.com/download/windows , entre com sua conta e rode este script de novo.'
-  exit 2
-}
-Write-Host '    Se aparecer um link pedindo para ativar o Funnel, abra no navegador, confirme e volte aqui.' -ForegroundColor Yellow
-& $ts funnel --bg 3100
-if ($LASTEXITCODE -ne 0) { throw 'Não foi possível ativar o Funnel. Confira se o Tailscale está conectado e se o Funnel foi liberado no painel.' }
-$estado = & $ts status --json | ConvertFrom-Json
-$endereco = 'https://' + $estado.Self.DNSName.TrimEnd('.')
-$publico = $false
-for ($i = 0; $i -lt 30 -and -not $publico; $i++) {
-  Start-Sleep -Seconds 4
-  try { $r = Invoke-RestMethod -Uri "$endereco/health" -Headers @{ Authorization = "Bearer $chave" } -TimeoutSec 10; $publico = $r.service -eq 'hanne-baileys' } catch { }
-}
-if (-not $publico) { Write-Warning "O endereço $endereco ainda não respondeu pela internet. Aguarde 1 ou 2 minutos e rode .\windows\status.ps1." }
-else { Ok "Endereço público respondendo: $endereco" }
-
 Set-Clipboard -Value $chave
 Write-Host "`n=================================================================" -ForegroundColor Magenta
 Write-Host ' Pronto! Agora, no ateliê (dados reais):' -ForegroundColor Magenta
-Write-Host '   Atendimentos > WhatsApp > Conectar por QR Code'
-Write-Host "   Endereço HTTPS do conector:  $endereco"
-Write-Host '   Chave do conector:           já está copiada (Ctrl+V no campo)'
-Write-Host ' Depois leia o QR no celular: WhatsApp > Aparelhos conectados.'
+Write-Host '   Atendimentos > WhatsApp > Conectar'
+Write-Host '   Chave do conector: já está copiada (Ctrl+V no campo)'
+Write-Host ' Em alguns segundos aparece o QR Code. No celular:'
+Write-Host '   WhatsApp > Aparelhos conectados > Conectar um aparelho'
 Write-Host ' Não envie a chave por chat nem por e-mail.'
 Write-Host "=================================================================`n" -ForegroundColor Magenta

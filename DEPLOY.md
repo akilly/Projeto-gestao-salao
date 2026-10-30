@@ -58,7 +58,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 npx wrangler secret put WHATSAPP_ENCRYPTION_KEY --name hanne-atelier
 ```
 
-Opcional, para o conector Baileys já vir configurado: `BAILEYS_BRIDGE_URL` e `BAILEYS_BRIDGE_KEY`, com o mesmo comando.
+O conector do WhatsApp (Baileys) não precisa de nenhum secret extra: ele roda no computador do ateliê e chama o site com a própria chave. Para receber e enviar **anexos** (fotos e áudios), crie um namespace KV e informe o ID no deploy: `npx wrangler kv namespace create hanne-media` e depois `CLOUDFLARE_KV_MEDIA_ID=<id> npm run deploy:cloudflare`.
 
 ## 5. Primeiro acesso
 
