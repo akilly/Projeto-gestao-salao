@@ -1,3 +1,5 @@
+> **Instalação no Windows (recomendada):** siga o `LEIA-ME.md` deste pacote (ou `docs/WHATSAPP_NO_COMPUTADOR.md` no repositório). O script `windows\instalar.ps1` faz todos os passos abaixo automaticamente.
+
 # WhatsApp com Baileys
 
 ## Estado e limites

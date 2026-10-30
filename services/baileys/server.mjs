@@ -17,6 +17,9 @@ const origin=new URL(site).origin;
 process.umask(0o077);
 const dir=resolve(process.env.DATA_DIR||'./data');await mkdir(join(dir,'media'),{recursive:true,mode:0o700});
 const store=openStore(join(dir,'journal.sqlite')),logger=pino({level:'silent'});
+/** Linha de status no console/arquivo de log, sem textos, chaves, QR ou números completos. */
+const log=message=>console.log(new Date().toISOString(),'[hanne-whatsapp]',message);
+const masked=phone=>phone?phone.slice(0,5)+'…'+phone.slice(-2):'';
 let config=store.config(),socket=null,status='disconnected',qr=null,qrUntil=0,starting=false,stopped=false,reconnect=null,deliveryBusy=false;
 const phoneOf=jid=>{const number=String(jid||'').split('@')[0].split(':')[0];return /^[1-9]\d{7,14}$/.test(number)?'+'+number:'';};
 const ownPhone=()=>phoneOf(socket?.user?.id);
@@ -28,7 +31,7 @@ async function deliver(){
   try{for(const row of store.events()){
     const t=Math.floor(Date.now()/1000),signature=createHmac('sha256',key).update(t+'.'+row.body).digest('hex');
     const response=await fetch(config.callbackURL,{method:'POST',headers:{'Content-Type':'application/json','X-Baileys-Signature':`t=${t},s=${signature}`},body:row.body,redirect:'error',signal:AbortSignal.timeout(15000)});
-    if(!response.ok)break;store.delivered(row.id);
+    if(!response.ok){log('O ateliê recusou um evento (HTTP '+response.status+'); vou tentar de novo.');break;}store.delivered(row.id);
   }}catch{/* Mantém o evento para a próxima tentativa, sem registrar conteúdo ou segredos. */}finally{deliveryBusy=false;}
 }
 async function contactJid(message){
@@ -69,20 +72,21 @@ async function start(){
     own.ev.on('creds.update',saveCreds);
     own.ev.on('connection.update',async update=>{
       if(socket!==own||stopped)return;
-      if(update.qr){qr=await QRCode.toDataURL(update.qr,{width:280,margin:3});qrUntil=Date.now()+55000;status='pairing';}
+      if(update.qr){qr=await QRCode.toDataURL(update.qr,{width:280,margin:3});qrUntil=Date.now()+55000;if(status!=='pairing')log('QR Code pronto: abra o ateliê em Atendimentos → WhatsApp para ler.');status='pairing';}
       if(update.connection==='open'){
-        if(config.expectedPhone&&ownPhone()!==config.expectedPhone){status='wrong_number';qr=null;await own.logout();return;}
+        if(config.expectedPhone&&ownPhone()!==config.expectedPhone){status='wrong_number';qr=null;log('Número diferente do já vinculado; sessão encerrada.');await own.logout();return;}
         if(!config.expectedPhone){config.expectedPhone=ownPhone();store.config(config);}
-        status='ready';qr=null;qrUntil=0;
+        status='ready';qr=null;qrUntil=0;log('WhatsApp conectado ('+masked(ownPhone())+').');
       }
       if(update.connection==='close'){
         qr=null;status='disconnected';
+        const code=update.lastDisconnect?.error?.output?.statusCode;log(code===DisconnectReason.loggedOut?'Aparelho desconectado pelo WhatsApp (logout). Gere um novo QR no ateliê.':'Conexão com o WhatsApp caiu (código '+(code||'?')+'); tentando de novo em 5 s.');
         if(update.lastDisconnect?.error?.output?.statusCode!==DisconnectReason.loggedOut&&!stopped){clearTimeout(reconnect);reconnect=setTimeout(()=>{starting=false;void start();},5000);}
       }
     });
     own.ev.on('messages.upsert',update=>{if(update.type==='notify')for(const message of update.messages)void receive(message).catch(()=>{});});
     own.ev.on('messages.update',updates=>{for(const {key:messageKey,update} of updates){const statuses={2:'sent',3:'delivered',4:'read',5:'read'};if(messageKey.fromMe&&statuses[update.status])event('whatsapp.message.updated',{id:messageKey.id,from:ownPhone(),status:statuses[update.status],externalId:store.db.prepare('SELECT id FROM sends WHERE provider_id=?').get(messageKey.id)?.id||''},'status:'+messageKey.id+':'+update.status);}});
-  }finally{starting=false;}
+  }catch(error){log('Falha ao iniciar a sessão ('+(error?.message||'erro')+'); nova tentativa em 30 s.');clearTimeout(reconnect);reconnect=setTimeout(()=>{void start();},30000);}finally{starting=false;}
 }
 async function bodyOf(request){let size=0;const chunks=[];for await(const chunk of request){size+=chunk.length;if(size>17*1024*1024){const error=Error('Arquivo muito grande.');error.status=413;throw error;}chunks.push(chunk);}return Buffer.concat(chunks);}
 const json=(response,data,statusCode=200)=>{response.writeHead(statusCode,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});response.end(JSON.stringify(data));};
@@ -132,7 +136,10 @@ const server=http.createServer(async(request,response)=>{
     return json(response,{error:'Operação não encontrada.'},404);
   }catch{return json(response,{error:'Não foi possível concluir a operação.'},503);}
 });
-server.requestTimeout=60000;server.listen(Number(process.env.PORT||3100),'127.0.0.1');
+server.requestTimeout=60000;
+const port=Number(process.env.PORT||3100),host=process.env.HOST||'127.0.0.1';
+server.listen(port,host,()=>log(`Conector no ar em http://${host}:${port}. ${config?'Sessão salva encontrada; conectando ao WhatsApp…':'Aguardando o ateliê pedir o QR Code.'}`));
+process.on('unhandledRejection',error=>log('Erro inesperado: '+(error?.message||error)));
 setInterval(()=>void deliver(),3000);
 // Anexos ficam disponíveis por até 30 dias no conector; a conversa não é apagada.
 setInterval(async()=>{try{for(const file of await readdir(join(dir,'media'))){const path=join(dir,'media',file);if(Date.now()-(await stat(path)).mtimeMs>30*86400000)await rm(path,{force:true});}}catch{}},3600000);

@@ -71,8 +71,8 @@ let state = blankState(), revision = 0, confirmedState = structuredClone(state),
 const ui = { month: localDate().slice(0, 7), financeTab: 'bills', inventoryTab: 'products', page: 'dashboard', dashTab: 'all', date: localDate(), agendaView: 'day', clientFilter: 'all', clientQuery: '', clientView: 'table', convFilter: 'all', conversationId: 'v1', threadOpen: false, quoteFilter: 'all', taskFilter: 'open', financePeriod: 'month', profileTab: 'overview', recordsMode: 'day', recordsDate: localDate(), recordsService: '', recordsSet: '', recordsClient: '', recordsPage: 1, financeScope: '', financeDate: '', financePageIndex: 1, inventoryPageIndex: 1, inventoryScope: '', agendaStatus: '', recordsMonth: localDate().slice(0, 7), serviceTab: 'records', mobile: false };
 // WhatsApp compartilha campos, diálogos e feedback, mas não usa a fila financeira.
 let whatsappPending = 0;
-// Integração por API (conector Baileys) desligada até funcionar; o envio é manual pelo link do WhatsApp (wa-link.js).
-const WHATSAPP_API = false;
+// Aba WhatsApp (conector Baileys no computador do ateliê). O envio pelo link (wa-link.js) continua disponível.
+const WHATSAPP_API = true;
 ui.inboxView = WHATSAPP_API && dataset === 'real' ? 'whatsapp' : 'notes';
 const whatsapp = createWhatsAppUI({ esc, btn: (...args) => btn(...args), field: (...args) => field(...args), openForm, modal, closeModal, toast, validate: validateVisibleControls,
     isExample: () => dataset === 'example',
