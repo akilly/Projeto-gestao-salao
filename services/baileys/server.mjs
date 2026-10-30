@@ -1,147 +1,265 @@
-/** Serviço dedicado a um único número/conta. HTTPS é terminado no proxy do operador.
- * Nenhuma mensagem é enviada automaticamente: /send corresponde ao clique explícito no ateliê.
+/**
+ * Conector do WhatsApp (Baileys) que roda no computador do ateliê.
+ *
+ * Modo "o conector chama o site": não abre porta, não precisa de túnel nem domínio.
+ * A cada poucos segundos ele faz POST em SITE_ORIGIN/api/whatsapp/bridge/sync com:
+ *   - status da sessão, número conectado e QR Code (só enquanto pareando);
+ *   - mensagens recebidas/enviadas pelo celular (eventos) e resultados dos envios.
+ * A resposta traz: confirmações (ack/resultsAck), a fila de mensagens a enviar (outbox)
+ * e comandos ('pair' para gerar QR, 'logout' para desconectar).
+ *
+ * Garantias:
+ *   - Nenhuma mensagem é enviada sozinha: a fila só contém o que a profissional clicou para enviar.
+ *   - Cada envio é anotado no diário local ANTES de ir ao WhatsApp; se cair no meio, o resultado
+ *     fica "incerto" e nunca é reenviado automaticamente (evita mensagem duplicada para a cliente).
+ *   - O log não mostra textos, chaves, QR nem números completos.
  */
-import http from 'node:http';
-import { mkdir, writeFile, readFile, rm, readdir, stat } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, rm, readdir, stat, access } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
-import { createHash, createHmac, timingSafeEqual, randomUUID } from 'node:crypto';
-import makeWASocket, { useMultiFileAuthState as loadAuthState, DisconnectReason, downloadMediaMessage, normalizeMessageContent, jidNormalizedUser, generateMessageIDV2 } from 'baileys';
+import { createHash, randomUUID } from 'node:crypto';
+import makeWASocket, { useMultiFileAuthState as loadAuthState, DisconnectReason, downloadMediaMessage, normalizeMessageContent, jidNormalizedUser, generateMessageIDV2, fetchLatestWaWebVersion } from 'baileys';
 import QRCode from 'qrcode';
 import pino from 'pino';
 import { openStore } from './store.mjs';
-const key=process.env.BRIDGE_KEY||'',site=process.env.SITE_ORIGIN||'';
-if(!/^[\w-]{32,160}$/.test(key))throw Error('Configure BRIDGE_KEY no arquivo .env.');
-// O endereço do ateliê é obrigatório: eventos só seguem para o site configurado pela titular.
-if(!/^https:\/\/[^/]+$/.test(site.replace(/\/$/,'')))throw Error('Configure SITE_ORIGIN com o endereço HTTPS do ateliê, por exemplo https://hanne-atelier.SEU-USUARIO.workers.dev.');
-const origin=new URL(site).origin;
+
+/* ---------- Configuração (.env) ---------- */
+const KEY = process.env.BRIDGE_KEY || '';
+const SITE = (process.env.SITE_ORIGIN || '').replace(/\/+$/, '');
+if (!/^[A-Za-z0-9_-]{32,160}$/.test(KEY)) throw Error('Configure BRIDGE_KEY no arquivo .env (o instalador gera uma automaticamente).');
+// HTTPS obrigatório; http só para testes locais no próprio computador.
+if (!/^(https:\/\/[^/\s]+|http:\/\/(127\.0\.0\.1|localhost)(:\d+)?)$/.test(SITE)) throw Error('Configure SITE_ORIGIN com o endereço do ateliê, por exemplo https://hanne-atelier.SEU-USUARIO.workers.dev');
+const VERSION = 2;
+const MIMES = ['image/jpeg', 'image/png', 'audio/aac', 'audio/amr', 'audio/mpeg', 'audio/mp4', 'audio/ogg'];
+const maxBytes = mime => (mime.startsWith('image/') ? 5 : 16) * 1024 * 1024;
+
 process.umask(0o077);
-const dir=resolve(process.env.DATA_DIR||'./data');await mkdir(join(dir,'media'),{recursive:true,mode:0o700});
-const store=openStore(join(dir,'journal.sqlite')),logger=pino({level:'silent'});
-/** Linha de status no console/arquivo de log, sem textos, chaves, QR ou números completos. */
-const log=message=>console.log(new Date().toISOString(),'[hanne-whatsapp]',message);
-const masked=phone=>phone?phone.slice(0,5)+'…'+phone.slice(-2):'';
-let config=store.config(),socket=null,status='disconnected',qr=null,qrUntil=0,starting=false,stopped=false,reconnect=null,deliveryBusy=false;
-const phoneOf=jid=>{const number=String(jid||'').split('@')[0].split(':')[0];return /^[1-9]\d{7,14}$/.test(number)?'+'+number:'';};
-const ownPhone=()=>phoneOf(socket?.user?.id);
-function authorized(request){const actual=Buffer.from(request.headers.authorization||''),expected=Buffer.from('Bearer '+key);return actual.length===expected.length&&timingSafeEqual(actual,expected);}
-function event(type,message,id){store.enqueue({id:id||randomUUID(),type,[type==='whatsapp.inbound_message.received'?'whatsappInboundMessage':'whatsappMessage']:message});}
-/** Outbox de eventos sobrevive a reinícios; assinatura cobre timestamp e bytes originais. */
-async function deliver(){
-  if(deliveryBusy||!config||status!=='ready')return;deliveryBusy=true;
-  try{for(const row of store.events()){
-    const t=Math.floor(Date.now()/1000),signature=createHmac('sha256',key).update(t+'.'+row.body).digest('hex');
-    const response=await fetch(config.callbackURL,{method:'POST',headers:{'Content-Type':'application/json','X-Baileys-Signature':`t=${t},s=${signature}`},body:row.body,redirect:'error',signal:AbortSignal.timeout(15000)});
-    if(!response.ok){log('O ateliê recusou um evento (HTTP '+response.status+'); vou tentar de novo.');break;}store.delivered(row.id);
-  }}catch{/* Mantém o evento para a próxima tentativa, sem registrar conteúdo ou segredos. */}finally{deliveryBusy=false;}
+const DIR = resolve(process.env.DATA_DIR || './data');
+const AUTH = join(DIR, 'auth'), MEDIA = join(DIR, 'media');
+await mkdir(MEDIA, { recursive: true, mode: 0o700 });
+const store = openStore(join(DIR, 'journal.sqlite'));
+const logger = pino({ level: 'silent' });
+
+/* ---------- Log e diagnóstico ---------- */
+const log = message => console.log(new Date().toISOString(), '[hanne-whatsapp]', message);
+const masked = phone => (phone ? phone.slice(0, 5) + '…' + phone.slice(-2) : '');
+/** data/status.json: lido pelo status.ps1 para mostrar a situação sem abrir o site. */
+const diag = { version: VERSION, site: SITE, lastSync: null, lastError: null };
+async function writeStatus() {
+  try { await writeFile(join(DIR, 'status.json'), JSON.stringify({ ...diag, whatsapp: status, phone: masked(ownPhone()), updatedAt: new Date().toISOString() }, null, 2)); } catch { /* diagnóstico é opcional */ }
 }
-async function contactJid(message){
-  const original=message.key.remoteJid||'';
-  if(original.endsWith('@s.whatsapp.net'))return jidNormalizedUser(original);
-  if(original.endsWith('@lid'))return message.key.remoteJidAlt||await socket.signalRepository?.lidMapping?.getPNForLID(original)||'';
+let lastLogged = '';
+/** Evita repetir a mesma mensagem de erro a cada sincronização. */
+const logOnce = message => { if (message !== lastLogged) { lastLogged = message; log(message); } };
+
+/* ---------- Estado da sessão do WhatsApp ---------- */
+let socket = null, status = 'disconnected', qr = null, qrUntil = 0, starting = false, reconnect = null, failures = 0;
+let expectedPhone = store.config()?.expectedPhone || '';
+const phoneOf = jid => { const number = String(jid || '').split('@')[0].split(':')[0]; return /^[1-9]\d{7,14}$/.test(number) ? '+' + number : ''; };
+const ownPhone = () => phoneOf(socket?.user?.id);
+const hasSession = () => access(join(AUTH, 'creds.json')).then(() => true, () => false);
+
+/** Guarda evento para o próximo sync; o id torna o reenvio idempotente no site. */
+function event(type, message, id, upload) {
+  const body = { id: id || randomUUID(), type, [type === 'whatsapp.inbound_message.received' ? 'whatsappInboundMessage' : 'whatsappMessage']: message };
+  if (upload) body._upload = upload;
+  store.enqueue(body);
+}
+async function contactJid(message) {
+  const original = message.key.remoteJid || '';
+  if (original.endsWith('@s.whatsapp.net')) return jidNormalizedUser(original);
+  if (original.endsWith('@lid')) return message.key.remoteJidAlt || await socket.signalRepository?.lidMapping?.getPNForLID(original) || '';
   return '';
 }
-/** Recebe só mensagens novas individuais; não importa grupos, status ou histórico antigo. */
-async function receive(message){
-  const jid=await contactJid(message),peer=phoneOf(jid),own=ownPhone();if(!peer||!own||!message.message||!message.key.id)return;
-  const content=normalizeMessageContent(message.message)||{},image=content.imageMessage,audio=content.audioMessage;
-  const type=image?'image':audio?'audio':content.conversation||content.extendedTextMessage?'text':'unsupported';
-  const text=content.conversation||content.extendedTextMessage?.text||image?.caption||'';
-  let mediaRef;
-  if(image||audio)try{
-    const bytes=await downloadMediaMessage(message,'buffer',{}, {logger,reuploadRequest:socket.updateMediaMessage});
-    const mime=String((image||audio).mimetype||'').split(';')[0];
-    if(bytes.length<=(image?5:16)*1024*1024&&['image/jpeg','image/png','audio/aac','audio/amr','audio/mpeg','audio/mp4','audio/ogg'].includes(mime)){
-      const id=randomUUID();await writeFile(join(dir,'media',id),bytes);await writeFile(join(dir,'media',id+'.json'),JSON.stringify({mime}));mediaRef='baileys:'+id;
+/** Só conversas individuais novas; grupos, status e histórico antigo ficam de fora. */
+async function receive(message) {
+  const peer = phoneOf(await contactJid(message)), own = ownPhone();
+  if (!peer || !own || !message.message || !message.key.id) return;
+  const outgoing = !!message.key.fromMe;
+  // Mensagem enviada pelo próprio ateliê já está registrada lá; não duplica como "eco".
+  if (outgoing && store.db.prepare('SELECT id FROM sends WHERE provider_id=?').get(message.key.id)) return;
+  const content = normalizeMessageContent(message.message) || {}, image = content.imageMessage, audio = content.audioMessage;
+  const type = image ? 'image' : audio ? 'audio' : content.conversation || content.extendedTextMessage ? 'text' : 'unsupported';
+  const text = content.conversation || content.extendedTextMessage?.text || image?.caption || '';
+  let media, upload;
+  if (image || audio) try {
+    const bytes = await downloadMediaMessage(message, 'buffer', {}, { logger, reuploadRequest: socket.updateMediaMessage });
+    const mime = String((image || audio).mimetype || '').split(';')[0];
+    if (MIMES.includes(mime) && bytes.length <= maxBytes(mime)) {
+      const id = randomUUID();
+      await writeFile(join(MEDIA, id), bytes);
+      media = { [type]: { mediaRef: 'baileys:' + id, caption: image?.caption || '' } };
+      upload = { id, mime };
     }
-  }catch{/* A mensagem permanece consultável no celular se o anexo não puder ser baixado. */}
-  const outgoing=!!message.key.fromMe;
-  if(outgoing&&store.db.prepare('SELECT id FROM sends WHERE provider_id=?').get(message.key.id))return;
-  event(outgoing?'whatsapp.smb.message.echoes':'whatsapp.inbound_message.received',{
-    id:message.key.id,from:outgoing?own:peer,to:outgoing?peer:own,type,
-    text:{body:text},...(mediaRef?{[type]:{mediaRef,caption:image?.caption||''}}:{}),
-    sendTime:new Date(Number(message.messageTimestamp||Date.now()/1000)*1000).toISOString(),customerProfile:{name:outgoing?peer:message.pushName||peer}
-  },(outgoing?'out:':'in:')+message.key.id);
+  } catch { /* Sem o anexo, a mensagem continua visível no celular. */ }
+  event(outgoing ? 'whatsapp.smb.message.echoes' : 'whatsapp.inbound_message.received', {
+    id: message.key.id, from: outgoing ? own : peer, to: outgoing ? peer : own, type, text: { body: text }, ...media,
+    sendTime: new Date(Number(message.messageTimestamp || Date.now() / 1000) * 1000).toISOString(),
+    customerProfile: { name: outgoing ? peer : message.pushName || peer }
+  }, (outgoing ? 'out:' : 'in:') + message.key.id, upload);
 }
-/** Um único socket por diretório; reconexão é limitada por espera e interrompida no logout. */
-async function start(){
-  if(starting||!config||stopped)return;starting=true;
-  try{
-    const {state,saveCreds}=await loadAuthState(join(dir,'auth'));
-    socket=makeWASocket({auth:state,logger,syncFullHistory:false,markOnlineOnConnect:false,shouldIgnoreJid:jid=>jid.endsWith('@g.us')||jid==='status@broadcast'});
-    const own=socket;status='reconnecting';
-    own.ev.on('creds.update',saveCreds);
-    own.ev.on('connection.update',async update=>{
-      if(socket!==own||stopped)return;
-      if(update.qr){qr=await QRCode.toDataURL(update.qr,{width:280,margin:3});qrUntil=Date.now()+55000;if(status!=='pairing')log('QR Code pronto: abra o ateliê em Atendimentos → WhatsApp para ler.');status='pairing';}
-      if(update.connection==='open'){
-        if(config.expectedPhone&&ownPhone()!==config.expectedPhone){status='wrong_number';qr=null;log('Número diferente do já vinculado; sessão encerrada.');await own.logout();return;}
-        if(!config.expectedPhone){config.expectedPhone=ownPhone();store.config(config);}
-        status='ready';qr=null;qrUntil=0;log('WhatsApp conectado ('+masked(ownPhone())+').');
+
+/** Abre (ou retoma) a sessão. Um único socket por vez; reconecta sozinho, exceto após logout. */
+async function start() {
+  if (starting || socket) return;
+  starting = true; status = 'reconnecting';
+  try {
+    const { state, saveCreds } = await loadAuthState(AUTH);
+    // Usa a versão atual do WhatsApp Web quando disponível; se falhar, fica com a padrão da biblioteca.
+    const latest = await fetchLatestWaWebVersion({ signal: AbortSignal.timeout(5000) }).catch(() => null);
+    const own = socket = makeWASocket({ auth: state, logger, ...(latest?.version ? { version: latest.version } : {}), syncFullHistory: false, markOnlineOnConnect: false, shouldIgnoreJid: jid => jid.endsWith('@g.us') || jid === 'status@broadcast' });
+    own.ev.on('creds.update', saveCreds);
+    own.ev.on('connection.update', async update => {
+      if (socket !== own) return;
+      if (update.qr) {
+        qr = await QRCode.toDataURL(update.qr, { width: 280, margin: 3 }); qrUntil = Date.now() + 55000;
+        if (status !== 'pairing') log('QR Code pronto: abra o ateliê em Atendimentos → WhatsApp para ler com o celular.');
+        status = 'pairing';
       }
-      if(update.connection==='close'){
-        qr=null;status='disconnected';
-        const code=update.lastDisconnect?.error?.output?.statusCode;log(code===DisconnectReason.loggedOut?'Aparelho desconectado pelo WhatsApp (logout). Gere um novo QR no ateliê.':'Conexão com o WhatsApp caiu (código '+(code||'?')+'); tentando de novo em 5 s.');
-        if(update.lastDisconnect?.error?.output?.statusCode!==DisconnectReason.loggedOut&&!stopped){clearTimeout(reconnect);reconnect=setTimeout(()=>{starting=false;void start();},5000);}
+      if (update.connection === 'open') {
+        qr = null; qrUntil = 0;
+        if (expectedPhone && ownPhone() !== expectedPhone) { status = 'wrong_number'; log('O QR foi lido por um número diferente do vinculado; sessão encerrada.'); await own.logout().catch(() => {}); return; }
+        status = 'ready'; failures = 0; log('WhatsApp conectado (' + masked(ownPhone()) + ').');
+      }
+      if (update.connection === 'close') {
+        socket = null; qr = null;
+        const code = update.lastDisconnect?.error?.output?.statusCode;
+        if (code === DisconnectReason.loggedOut || status === 'wrong_number') {
+          // Sessão inválida: apaga as credenciais para o próximo pareamento gerar um QR novo.
+          if (status !== 'wrong_number') status = 'disconnected';
+          await rm(AUTH, { recursive: true, force: true });
+          log('Sessão do WhatsApp encerrada. Para conectar de novo, gere um QR no ateliê.');
+        } else {
+          status = 'reconnecting';
+          // 515 = reinício pedido pelo WhatsApp logo após parear; é normal.
+          // Espera crescente (5 s, 10 s, 20 s… até 2 min) para não insistir sem parar se a internet cair.
+          const wait = code === DisconnectReason.restartRequired ? 500 : Math.min(120000, 5000 * 2 ** failures++);
+          if (code !== DisconnectReason.restartRequired) logOnce('Conexão com o WhatsApp caiu (código ' + (code || '?') + '); tentando de novo sozinho.');
+          clearTimeout(reconnect); reconnect = setTimeout(() => void start(), wait);
+        }
       }
     });
-    own.ev.on('messages.upsert',update=>{if(update.type==='notify')for(const message of update.messages)void receive(message).catch(()=>{});});
-    own.ev.on('messages.update',updates=>{for(const {key:messageKey,update} of updates){const statuses={2:'sent',3:'delivered',4:'read',5:'read'};if(messageKey.fromMe&&statuses[update.status])event('whatsapp.message.updated',{id:messageKey.id,from:ownPhone(),status:statuses[update.status],externalId:store.db.prepare('SELECT id FROM sends WHERE provider_id=?').get(messageKey.id)?.id||''},'status:'+messageKey.id+':'+update.status);}});
-  }catch(error){log('Falha ao iniciar a sessão ('+(error?.message||'erro')+'); nova tentativa em 30 s.');clearTimeout(reconnect);reconnect=setTimeout(()=>{void start();},30000);}finally{starting=false;}
+    own.ev.on('messages.upsert', update => { if (update.type === 'notify') for (const message of update.messages) void receive(message).catch(() => {}); });
+    own.ev.on('messages.update', updates => {
+      const names = { 2: 'sent', 3: 'delivered', 4: 'read', 5: 'read' };
+      for (const { key, update } of updates) if (key.fromMe && names[update.status]) {
+        const externalId = store.db.prepare('SELECT id FROM sends WHERE provider_id=?').get(key.id)?.id || '';
+        event('whatsapp.message.updated', { id: key.id, from: ownPhone(), status: names[update.status], externalId }, 'status:' + key.id + ':' + update.status);
+      }
+    });
+  } catch (error) {
+    socket = null; status = 'reconnecting';
+    log('Falha ao iniciar a sessão (' + (error?.message || 'erro') + '); nova tentativa em 30 s.');
+    clearTimeout(reconnect); reconnect = setTimeout(() => void start(), 30000);
+  } finally { starting = false; }
 }
-async function bodyOf(request){let size=0;const chunks=[];for await(const chunk of request){size+=chunk.length;if(size>17*1024*1024){const error=Error('Arquivo muito grande.');error.status=413;throw error;}chunks.push(chunk);}return Buffer.concat(chunks);}
-const json=(response,data,statusCode=200)=>{response.writeHead(statusCode,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});response.end(JSON.stringify(data));};
-const server=http.createServer(async(request,response)=>{
-  if(!authorized(request))return json(response,{error:'Acesso negado.'},401);
-  try{
-    const path=new URL(request.url,'http://localhost').pathname;
-    if(path==='/health'&&request.method==='GET')return json(response,{service:'hanne-baileys',version:1});
-    if(path==='/session'&&request.method==='GET')return json(response,{status,phone:ownPhone(),qr:Date.now()<qrUntil?qr:null});
-    if(path==='/session'&&request.method==='POST'){
-      const input=JSON.parse((await bodyOf(request)).toString()),url=new URL(input.callbackURL);
-      if(url.origin!==origin||!/^\/api\/whatsapp\/baileys-webhook\/[\w-]{16,100}$/.test(url.pathname)||url.search||url.hash||url.username||url.password)return json(response,{error:'Destino não autorizado.'},400);
-      if(config&&config.channelId!==input.channelId)return json(response,{error:'Este conector já pertence a outra conta.'},409);
-      config={callbackURL:url.href,channelId:input.channelId,expectedPhone:config?.expectedPhone||input.expectedPhone||''};store.config(config);stopped=false;
-      if(!socket||status==='disconnected')await start();return json(response,{started:true});
-    }
-    if(path==='/session'&&request.method==='DELETE'){
-      stopped=true;clearTimeout(reconnect);status='disconnected';qr=null;
-      try{await socket?.logout();}finally{socket=null;config=null;store.config(null);await rm(join(dir,'auth'),{recursive:true,force:true});store.db.exec('DELETE FROM events;');}
-      return json(response,{disconnected:true});
-    }
-    if(path.startsWith('/media/')&&request.method==='GET'){
-      const id=path.slice(7);if(!/^[\w-]{16,100}$/.test(id))return json(response,{error:'Arquivo inválido.'},400);
-      const metadata=JSON.parse(await readFile(join(dir,'media',id+'.json'),'utf8')),bytes=await readFile(join(dir,'media',id));response.writeHead(200,{'Content-Type':metadata.mime,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});return response.end(bytes);
-    }
-    if(path==='/send'&&request.method==='POST'){
-      const raw=await bodyOf(request),form=await new Request('http://localhost',{method:'POST',headers:{'Content-Type':request.headers['content-type']||''},body:raw}).formData();
-      const id=String(form.get('requestId')||''),peer=String(form.get('to')||''),text=String(form.get('text')||''),file=form.get('file');
-      if(!/^[\w-]{16,100}$/.test(id)||!/^\+[1-9]\d{7,14}$/.test(peer)||text.length>4096||(!text&&!file))return json(response,{error:'Mensagem inválida.'},400);
-      const bytes=file?Buffer.from(await file.arrayBuffer()):null;
-      const fingerprint=createHash('sha256').update(JSON.stringify([peer,text,file?.type||''])).update(bytes||'').digest('hex');
-      // Verificação e claim ocorrem sem await intermediário antes do efeito externo.
-      const previous=store.db.prepare('SELECT * FROM sends WHERE id=?').get(id);
-      if(previous){if(previous.fingerprint!==fingerprint)return json(response,{error:'Tentativa divergente.'},409);return json(response,{id:previous.provider_id,status:previous.status});}
-      if(status!=='ready')return json(response,{error:'WhatsApp desconectado.'},409);
-      const mime=file?.type||'',image=mime.startsWith('image/');
-      if(file&&(!['image/jpeg','image/png','audio/aac','audio/amr','audio/mpeg','audio/mp4','audio/ogg'].includes(mime)||bytes.length>(image?5:16)*1024*1024||(!image&&text)))return json(response,{error:'Arquivo inválido.'},400);
-      store.claim(id,fingerprint);
-      const messageId=generateMessageIDV2(socket.user?.id);
-      store.db.prepare('UPDATE sends SET provider_id=? WHERE id=?').run(messageId,id);
-      try{
-        const content=file?(image?{image:bytes,caption:text,mimetype:mime}:{audio:bytes,mimetype:mime}):{text};
-        const sent=await socket.sendMessage(peer.slice(1)+'@s.whatsapp.net',content,{messageId});
-        if(!sent?.key?.id)throw Error();store.accepted(id,sent.key.id);return json(response,{id:sent.key.id,status:'accepted'});
-      }catch{return json(response,{id:null,status:'uncertain'});}
-    }
-    return json(response,{error:'Operação não encontrada.'},404);
-  }catch{return json(response,{error:'Não foi possível concluir a operação.'},503);}
-});
-server.requestTimeout=60000;
-const port=Number(process.env.PORT||3100),host=process.env.HOST||'127.0.0.1';
-server.listen(port,host,()=>log(`Conector no ar em http://${host}:${port}. ${config?'Sessão salva encontrada; conectando ao WhatsApp…':'Aguardando o ateliê pedir o QR Code.'}`));
-process.on('unhandledRejection',error=>log('Erro inesperado: '+(error?.message||error)));
-setInterval(()=>void deliver(),3000);
-// Anexos ficam disponíveis por até 30 dias no conector; a conversa não é apagada.
-setInterval(async()=>{try{for(const file of await readdir(join(dir,'media'))){const path=join(dir,'media',file);if(Date.now()-(await stat(path)).mtimeMs>30*86400000)await rm(path,{force:true});}}catch{}},3600000);
-if(config)void start();
-for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>{stopped=true;clearTimeout(reconnect);socket?.end(undefined);server.close();process.exit(0);});
+/** Desconecta de verdade: sai da conta no WhatsApp e apaga credenciais e pendências locais. */
+async function logout() {
+  clearTimeout(reconnect);
+  const own = socket; socket = null; status = 'disconnected'; qr = null; failures = 0;
+  try { await own?.logout(); } catch { own?.end(undefined); }
+  await rm(AUTH, { recursive: true, force: true });
+  store.db.exec('DELETE FROM events;');
+  expectedPhone = ''; store.config(null);
+  log('Desconectado a pedido do ateliê.');
+}
+
+/* ---------- Comunicação com o site ---------- */
+const auth = { Authorization: 'Bearer ' + KEY };
+async function call(path, init = {}) {
+  return fetch(SITE + path, { ...init, headers: { ...auth, ...init.headers }, redirect: 'error', signal: AbortSignal.timeout(init.timeout || 20000) });
+}
+/** Envia o arquivo de um evento antes do próprio evento. Retorna false se deve tentar depois. */
+async function uploadMedia(row) {
+  const { id, mime } = row._upload;
+  const path = join(MEDIA, id);
+  let bytes = null; try { bytes = await readFile(path); } catch { /* arquivo já removido */ }
+  let ok = false;
+  if (bytes) {
+    const response = await call('/api/whatsapp/bridge/media/' + id, { method: 'POST', headers: { 'Content-Type': mime }, body: bytes, timeout: 60000 });
+    if (response.status >= 500 && response.status !== 503) return false; // falha temporária
+    ok = response.ok; // 503 = ateliê sem armazenamento de anexos; 4xx = formato recusado
+  }
+  delete row._upload;
+  if (!ok) { const message = row.whatsappInboundMessage || row.whatsappMessage; const type = message?.type; if (type && message[type]) delete message[type]; }
+  store.replace(row);
+  await rm(path, { force: true });
+  return true;
+}
+/** Um ciclo: informa o estado, recebe a fila e os comandos. Retorna em quantos segundos repetir. */
+async function sync() {
+  // Anexos pendentes vão primeiro; o evento só segue quando o arquivo já está no ateliê.
+  const events = [];
+  for (const { body } of store.events()) {
+    const row = JSON.parse(body);
+    if (row._upload && !(await uploadMedia(row).catch(() => false))) break;
+    events.push(row);
+  }
+  const results = store.unreported().map(r => ({ requestId: r.id, status: r.status, providerId: r.provider_id || undefined, error: r.error || undefined }));
+  const response = await call('/api/whatsapp/bridge/sync', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ version: VERSION, status, phone: ownPhone(), qr: status === 'pairing' && Date.now() < qrUntil ? qr : null, events, results })
+  });
+  if (response.status === 401) { diag.lastError = 'Chave não cadastrada'; logOnce('O ateliê ainda não reconhece esta chave. Cole a chave em Atendimentos → WhatsApp → Conectar.'); return 15; }
+  if (!response.ok) { diag.lastError = 'HTTP ' + response.status; logOnce('O ateliê respondeu com erro (HTTP ' + response.status + '); tentando de novo.'); return 15; }
+  const data = await response.json();
+  diag.lastSync = new Date().toISOString(); diag.lastError = null;
+  logOnce('Comunicação com o ateliê funcionando.');
+  for (const id of data.ack || []) store.delivered(id);
+  for (const id of data.resultsAck || []) store.reported(id);
+  if (typeof data.expectedPhone === 'string' && data.expectedPhone !== expectedPhone) { expectedPhone = data.expectedPhone; store.config({ expectedPhone }); }
+  // Canal desconectado no site (ou pedido explícito): encerra a sessão local.
+  if (data.command === 'logout' || (data.disconnected && (socket || await hasSession()))) await logout();
+  else if (data.command === 'pair' && !socket && !starting) { if (status === 'wrong_number') status = 'disconnected'; await start(); }
+  for (const item of Array.isArray(data.outbox) ? data.outbox : []) await sendItem(item);
+  return Math.min(60, Math.max(2, Number(data.interval) || 5));
+}
+/** Envia um item da fila. O diário garante no máximo uma tentativa por requestId. */
+async function sendItem(item) {
+  const id = String(item?.requestId || ''), to = String(item?.to || ''), text = String(item?.text || ''), mime = item?.mime ? String(item.mime) : '';
+  if (!/^[\w-]{16,100}$/.test(id) || !/^\+[1-9]\d{7,14}$/.test(to) || text.length > 4096 || (mime && !MIMES.includes(mime)) || (!text && !mime)) return;
+  const fingerprint = createHash('sha256').update(JSON.stringify([to, text, mime])).digest('hex');
+  const previous = store.db.prepare('SELECT fingerprint FROM sends WHERE id=?').get(id);
+  if (previous) { if (previous.fingerprint === fingerprint) store.reportAgain(id); return; } // já tentado: só reinforma
+  if (status !== 'ready' || !socket) return; // o site oferece de novo depois
+  let bytes = null;
+  if (mime) {
+    if (!/^\/api\/whatsapp\/bridge\/outbox\/[\w-]{16,100}$/.test(String(item.media || ''))) return;
+    const response = await call(item.media, { timeout: 60000 }).catch(() => null);
+    if (!response) return;
+    if (response.status === 404) { store.claim(id, fingerprint); store.failed(id, 'O anexo não está mais disponível no ateliê.'); return; }
+    if (!response.ok) return;
+    bytes = Buffer.from(await response.arrayBuffer());
+    if (bytes.length > maxBytes(mime)) { store.claim(id, fingerprint); store.failed(id, 'Arquivo grande demais para o WhatsApp.'); return; }
+  }
+  const jid = to.slice(1) + '@s.whatsapp.net';
+  const [check] = await socket.onWhatsApp(jid).catch(() => []);
+  if (check && check.exists === false) { store.claim(id, fingerprint); store.failed(id, 'Este número não tem WhatsApp.'); return; }
+  // Daqui em diante, qualquer interrupção deixa o envio como "incerto" (nunca reenvia sozinho).
+  store.claim(id, fingerprint);
+  const messageId = generateMessageIDV2(socket.user?.id);
+  store.db.prepare('UPDATE sends SET provider_id=? WHERE id=?').run(messageId, id);
+  try {
+    const content = mime ? (mime.startsWith('image/') ? { image: bytes, caption: text, mimetype: mime } : { audio: bytes, mimetype: mime }) : { text };
+    const sent = await socket.sendMessage(jid, content, { messageId });
+    if (sent?.key?.id) store.accepted(id, sent.key.id);
+  } catch { /* permanece incerto; a profissional confere no celular */ }
+}
+
+/* ---------- Laço principal ---------- */
+let running = true, timer = null;
+async function loop() {
+  let wait = 15;
+  try { wait = await sync(); }
+  catch (error) { diag.lastError = error?.name === 'TimeoutError' ? 'Tempo esgotado' : 'Sem conexão'; logOnce('Não consegui falar com o ateliê (' + diag.lastError + '). Confira a internet; vou tentar de novo.'); }
+  await writeStatus();
+  if (running) timer = setTimeout(loop, wait * 1000);
+}
+process.on('unhandledRejection', error => log('Erro inesperado: ' + (error?.message || error)));
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { running = false; clearTimeout(timer); clearTimeout(reconnect); socket?.end(undefined); store.db.close(); process.exit(0); });
+// Arquivos recebidos que não puderam ser enviados ao ateliê são apagados após 30 dias.
+setInterval(async () => { try { for (const file of await readdir(MEDIA)) { const path = join(MEDIA, file); if (Date.now() - (await stat(path)).mtimeMs > 30 * 86400000) await rm(path, { force: true }); } } catch {} }, 3600000).unref();
+
+log('Conector iniciado. Ateliê: ' + SITE);
+if (await hasSession()) { log('Sessão salva encontrada; conectando ao WhatsApp…'); void start(); }
+else log('Aguardando o ateliê pedir o QR Code (Atendimentos → WhatsApp → Conectar).');
+void loop();

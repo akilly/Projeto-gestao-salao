@@ -1,7 +1,7 @@
 /**
  * Publica o Worker na conta Cloudflare de quem executa (wrangler login).
  * Uso: CLOUDFLARE_D1_DATABASE_ID=<id> npm run deploy:cloudflare
- * Opcional: WORKER_NAME (padrão hanne-atelier) e D1_DATABASE_NAME (padrão hanne-atelier-db).
+ * Opcional: WORKER_NAME (padrão hanne-atelier), D1_DATABASE_NAME (padrão hanne-atelier-db) e CLOUDFLARE_KV_MEDIA_ID (anexos do WhatsApp).
  * Etapas: build Vinext → ajusta dist/server/wrangler.json com o D1 real → aplica migrações remotas → deploy.
  * Segredos (SETUP_TOKEN, WHATSAPP_ENCRYPTION_KEY...) são definidos à parte com `wrangler secret put`; veja DEPLOY.md.
  */
@@ -14,6 +14,8 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const databaseId = process.env.CLOUDFLARE_D1_DATABASE_ID || '';
 const workerName = process.env.WORKER_NAME || 'hanne-atelier';
 const databaseName = process.env.D1_DATABASE_NAME || 'hanne-atelier-db';
+// KV dos anexos do WhatsApp (opcional): crie com `npx wrangler kv namespace create hanne-media`.
+const mediaKvId = process.env.CLOUDFLARE_KV_MEDIA_ID || '';
 const skipBuild = process.argv.includes('--skip-build');
 const dryRun = process.argv.includes('--dry-run');
 
@@ -36,6 +38,8 @@ config.name = workerName;
 config.topLevelName = workerName;
 // O build local usa um D1 provisório; aqui ele aponta para o banco real e para as migrações versionadas.
 config.d1_databases = [{ binding: 'DB', database_name: databaseName, database_id: databaseId, migrations_dir: '../../drizzle' }];
+if (/^[0-9a-f]{32}$/i.test(mediaKvId)) config.kv_namespaces = [{ binding: 'MEDIA', id: mediaKvId }];
+else { delete config.kv_namespaces; console.warn('\nAviso: CLOUDFLARE_KV_MEDIA_ID não definido; fotos e áudios do WhatsApp ficam desativados (só texto).'); }
 delete config.dev;
 writeFileSync(configPath, JSON.stringify(config));
 console.log(`\nConfiguração pronta: Worker "${workerName}", D1 "${databaseName}" (${databaseId}).`);

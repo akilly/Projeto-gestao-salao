@@ -27,6 +27,8 @@ const localBindingConfig = {
         },
       ]
     : [],
+  // Anexos do WhatsApp (Baileys) no ambiente local; no deploy o script aponta para o KV real.
+  kv_namespaces: [{ binding: "MEDIA", id: "local-media" }],
   r2_buckets: r2
     ? [
         {
