@@ -71,7 +71,7 @@ Canal direto Meta Cloud API para textos, imagens e áudios. Comece com o número
 
 ## WhatsApp por QR e exclusão — 24/10/2026
 
-Conector Node Baileys em `services/baileys`, com instalação e ativação pendentes. Consulte `docs/INTEGRACAO_BAILEYS.md`. A interface oferece download do conector sanitizado. Exclusões sem vínculos usam `public/deletion.js`; financeiro e estoque confirmados são preservados. Testes completos: `node --test tests/*.test.mjs services/baileys/*.test.mjs`.
+Conector Node Baileys em `services/baileys`. Instalação no Windows com endereço HTTPS fixo pelo Tailscale Funnel: `docs/WHATSAPP_NO_COMPUTADOR.md` (scripts em `services/baileys/windows`). Detalhes técnicos e de segurança: `docs/INTEGRACAO_BAILEYS.md`. A interface oferece download do conector sanitizado. Exclusões sem vínculos usam `public/deletion.js`; financeiro e estoque confirmados são preservados. Testes completos: `node --test tests/*.test.mjs services/baileys/*.test.mjs`.
 
 
 ## Versão 13 — conta da Hanne e exclusões confirmadas
