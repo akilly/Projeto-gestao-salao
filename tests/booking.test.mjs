@@ -36,7 +36,7 @@ test('cliente existente agenda sem criar um segundo cadastro', () => {
 test('conflito não deixa cliente nem agendamento parcial no estado original', () => {
     const state = fixture(); state.appointments = [{ ...appointment, id: 'existing' }];
     const before = structuredClone(state);
-    assert.throws(() => createBooking(state, appointment, { appointmentId: 'a1', clientId: 'c2', contact: { name: 'Bruna', phone: '41999990002' } }), /Conflito/);
+    assert.throws(() => createBooking(state, appointment, { appointmentId: 'a1', clientId: 'c2', contact: { name: 'Bruna', phone: '41999990002' } }), /Já existe Ana às 10:00/);
     assert.deepEqual(state, before);
 });
 
@@ -64,4 +64,22 @@ test('bloqueio continua possível sem cliente e sem novo cadastro', () => {
     const result = createBooking(state, { ...appointment, clientId: null, serviceId: null, status: 'blocked', label: 'Almoço' }, { appointmentId: 'block1' });
     assert.equal(result.state.clients.length, 1);
     assert.equal(result.appointment.status, 'blocked');
+});
+
+test('horário sobreposto só entra com confirmação explícita e a regra vale também no servidor', async () => {
+    const { validateState } = await import('../public/domain.js');
+    const state = fixture();
+    state.appointments.push({ id: 'a0', clientId: 'c1', serviceId: 's1', date: '2030-01-08', time: '10:00', duration: 60, buffer: 15, status: 'confirmed', note: '' });
+    const appointment = { clientId: 'c1', serviceId: 's1', date: '2030-01-08', time: '10:30', duration: 60, buffer: 0, status: 'confirmed', note: '' };
+    let error;
+    try { createBooking(state, appointment, { appointmentId: 'a1' }); } catch (e) { error = e; }
+    assert.ok(error?.overlap, 'o erro leva os horários em conflito para a tela');
+    assert.deepEqual(error.overlap.map(h => [h.name, h.time, h.end]), [['Ana', '10:00', '11:00']]);
+    const ok = createBooking(state, { ...appointment, allowOverlap: true }, { appointmentId: 'a1' });
+    assert.equal(ok.state.appointments.length, 2);
+    assert.doesNotThrow(() => validateState(ok.state, state));
+    const forged = structuredClone(ok.state); delete forged.appointments[1].allowOverlap;
+    assert.throws(() => validateState(forged, state), /Conflito entre agendamentos/);
+    const notBoolean = structuredClone(ok.state); notBoolean.appointments[1].allowOverlap = 'sim';
+    assert.throws(() => validateState(notBoolean, state));
 });
