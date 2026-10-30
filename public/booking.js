@@ -1,5 +1,5 @@
 /** Regras compartilhadas de cadastro e reserva. As duas entidades são preparadas antes de trocar o estado. */
-import { appointmentConflict, minutes } from './core.js';
+import { appointmentConflicts, minutes } from './core.js';
 import { validCalendarDate } from './navigation.js';
 import { validateState } from './domain.js';
 
@@ -26,19 +26,26 @@ export function validateClientContact(input, clients, ignoreId = '') {
 }
 
 /** Mantém expediente, folgas e conflitos iguais em criação, remarcação e importação. */
-export function validateBookingSlot(state, candidate, ignoreId) {
+/** Sobreposição só é aceita com a confirmação explícita da profissional (allowOverlap). O erro leva os horários em conflito para a tela pedir essa confirmação. */
+export function overlapError(state, hits) {
+    const name = h => h.status === 'blocked' ? (h.label || 'Bloqueio de horário') : state.clients.find(c => c.id === h.clientId)?.name || 'outro atendimento';
+    const err = Error(hits.length === 1 ? `Já existe ${name(hits[0])} às ${hits[0].time} nesse horário. Confirme abaixo se quer manter os dois.` : `Já existem ${hits.length} atendimentos nesse horário. Confirme abaixo se quer manter todos.`);
+    err.overlap = hits.map(h => ({ id: h.id, name: name(h), service: h.status === 'blocked' ? 'Bloqueio' : state.services.find(s => s.id === h.serviceId)?.name || '', time: h.time, end: h.duration ? `${String(Math.floor((minutes(h.time) + h.duration) / 60)).padStart(2, '0')}:${String((minutes(h.time) + h.duration) % 60).padStart(2, '0')}` : '' }));
+    return err;
+}
+export function validateBookingSlot(state, candidate, ignoreId, { allowOverlap = false } = {}) {
     if (!validCalendarDate(candidate.date)) throw Error('Informe uma data válida.');
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(candidate.time)) throw Error('Informe um horário válido.');
     if (!Number.isFinite(candidate.duration) || candidate.duration < 15 || candidate.duration > 600 || !Number.isFinite(candidate.buffer) || candidate.buffer < 0 || candidate.buffer > 120) throw Error('Confira a duração e o intervalo.');
     if (state.settings.closedDays.includes(new Date(candidate.date + 'T12:00:00Z').getUTCDay())) throw Error('Esta data é um dia de folga. Ajuste a rotina nas configurações ou escolha outro dia.');
     if (minutes(candidate.time) < minutes(state.settings.open) || minutes(candidate.time) + candidate.duration + candidate.buffer > minutes(state.settings.close)) throw Error('O atendimento e seu intervalo precisam caber no horário de funcionamento.');
-    const hit = appointmentConflict(state.appointments, candidate, ignoreId);
-    if (hit) throw Error(`Conflito com ${hit.label || state.clients.find(c => c.id === hit.clientId)?.name || 'outro atendimento'}, às ${hit.time}. Escolha outro horário.`);
+    const hits = appointmentConflicts(state.appointments, candidate, ignoreId);
+    if (hits.length && !(allowOverlap || candidate.allowOverlap)) throw overlapError(state, hits);
 }
 
 /** Cria cliente opcional e agendamento no mesmo snapshot; falha não deixa um cadastro órfão. */
 export function createBooking(state, appointment, { appointmentId, clientId, contact = null } = {}) {
-    validateBookingSlot(state, appointment);
+    validateBookingSlot(state, appointment, undefined, { allowOverlap: appointment.allowOverlap === true });
     const next = structuredClone(state);
     let createdClient = null;
     if (contact) {
