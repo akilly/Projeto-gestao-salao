@@ -1,48 +1,61 @@
-# WhatsApp com Baileys
+> **Instalação no Windows (recomendada):** siga o `LEIA-ME.md` deste pacote (ou `docs/WHATSAPP_NO_COMPUTADOR.md` no repositório). O script `windows\instalar.ps1` faz tudo automaticamente.
 
-## Estado e limites
+# Conector WhatsApp (Baileys)
 
-O site possui adaptador para Baileys, configuração HTTPS do conector e leitura do QR Code real gerado pelo processo Node. Não existe instância de conector hospedada nesta entrega e nenhum número foi pareado. Envio/recebimento real depende dessa instalação e do teste com o telefone da titular. A hospedagem Cloudflare Workers do site não executa o processo Baileys continuamente.
+Processo Node que mantém a sessão do WhatsApp (como o WhatsApp Web) no computador do ateliê e conversa com o site publicado no Cloudflare Workers.
 
-Baileys é uma biblioteca independente da Meta. Não oferece garantia de estabilidade, elegibilidade ou proteção contra restrições/bloqueio do número. A biblioteca é gratuita; computador, rede, domínio, túnel HTTPS ou hospedagem podem ter custos. Não prometer funcionamento permanente a custo zero.
+## Como funciona (modo "o conector chama o site")
 
-## Instalar o conector
+```
+Computador do ateliê                              Site (Cloudflare Workers + D1 + KV)
+┌─────────────────────────┐   POST /api/whatsapp/bridge/sync (a cada 2–15 s)   ┌───────────────────────┐
+│ server.mjs (Baileys)    │ ─────────────────────────────────────────────────▶ │ status, QR, eventos,   │
+│ data/auth  (sessão)     │ ◀───────────────────────────────────────────────── │ resultados → ack, fila │
+│ data/journal.sqlite     │   POST /bridge/media/<id> (anexo recebido)          │ de envio e comandos    │
+│ data/status.json        │   GET  /bridge/outbox/<id> (anexo a enviar)         └───────────────────────┘
+└─────────────────────────┘
+```
 
-A pasta `services/baileys` integra o repositório do projeto, mas é um serviço separado do Worker. Requisitos: Node 22.13 ou superior, disco persistente privado, um único processo por pasta de dados, acesso de saída ao WhatsApp e ao site. Usar domínio HTTPS público e proxy reverso para `127.0.0.1:3100`. O proxy deve aceitar uploads de 17 MB e timeout de pelo menos 60 segundos. Nunca expor o diretório de dados.
+- **Sem porta aberta, túnel ou domínio.** Só conexões de saída HTTPS. Custo zero nos planos gratuitos.
+- **Autenticação:** `Authorization: Bearer BRIDGE_KEY`. O site guarda só o hash da chave (tabela `wa_bridge`) e uma cópia cifrada (AES-GCM) em `wa_connections.api_key`.
+- **Comandos do site:** `pair` (gerar QR) e `logout` (desconectar e apagar a sessão local).
+- **Fila de envio:** o site só coloca na fila o que a profissional clicou para enviar. Item sem resultado é oferecido de novo após 2 min; o diário local impede envio duplicado.
+- **Anexos:** recebidos vão para o Workers KV (`MEDIA`) por 30 dias, sempre **antes** do evento que os referencia. Sem KV configurado, o texto da mensagem chega normalmente e o anexo fica só no celular.
 
-1. Entre em `services/baileys` e execute `npm ci`.
-2. Copie `.env.example` para `.env`.
-3. Gere uma chave aleatória: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
-4. Coloque a chave em `BRIDGE_KEY`. Mantenha `SITE_ORIGIN` com a origem exata do site publicado. Configure `DATA_DIR` em volume persistente privado e `PORT` se necessário.
-5. Execute `npm start`. Configure reinício pelo gerenciador de serviços do seu computador/servidor. Não use múltiplas réplicas nem disco efêmero.
-6. No site, abra Dados reais → Atendimentos → WhatsApp → Conectar por QR Code. Informe o domínio HTTPS e a mesma chave. Nunca compartilhe a chave por chat.
-7. Leia o código usando WhatsApp Business → Aparelhos conectados → Conectar aparelho. Aguarde o estado conectado. A tela consulta o conector a cada 12 segundos; o QR expira e é substituído pelo conector.
-8. Envie uma mensagem de outro telefone. Confira recebimento, pendência, resposta, imagem, áudio e status. Teste também reiniciar o conector sem ler novamente o QR.
+## Instalação manual (Linux/macOS ou para desenvolvimento)
 
-## Segurança e contrato
+Requisitos: Node 22.13 ou superior, pasta de dados persistente e privada, um único processo por pasta.
 
-Um conector atende uma única conta/número. Associação com outra conta é recusada. Um número diferente do histórico existente também é recusado; não unir dados implicitamente. As chamadas site → conector usam Bearer sobre HTTPS; o domínio cadastrado não aceita IP literal, HTTP, porta, credenciais ou caminho. Redirecionamentos são recusados. O operador deve usar domínio próprio sob seu controle, sem DNS apontado para rede interna.
+1. Em `services/baileys`, rode `npm ci`.
+2. Copie `.env.example` para `.env` e gere a chave: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
+3. Preencha `BRIDGE_KEY`, `SITE_ORIGIN` (endereço HTTPS do site, sem barra final) e `DATA_DIR`.
+4. Rode `npm start` e configure reinício automático no gerenciador de serviços do sistema.
+5. No site: Dados reais → Atendimentos → WhatsApp → Conectar. Cole a chave. Nunca envie a chave por chat.
+6. Leia o QR em WhatsApp → Aparelhos conectados → Conectar um aparelho.
 
-A chave do conector fica cifrada em AES-GCM na D1, com chave mestra existente e AAD da conta. Cookies de sessão não são enviados ao conector. A pasta `data/auth` guarda as credenciais de aparelho conectado em arquivos privados; é material sensível, não deve ser publicado nem incluído em backups abertos. Os arquivos usam umask 077; cifragem do disco e backup privado são responsabilidade da instalação. Não usar esta implementação de armazenamento de sessão para um serviço público multicliente.
+Para testes locais, `SITE_ORIGIN` aceita também `http://127.0.0.1:PORTA` ou `http://localhost:PORTA`.
 
-Eventos conector → site usam HMAC-SHA256 sobre timestamp + corpo, tolerância de cinco minutos, deduplicação na D1 e validação do número de origem. Webhooks não usam autenticação de visitante. Site → conector é autenticado e a configuração de callback só aceita a origem definida em SITE_ORIGIN. Não registrar texto, chaves, QR ou credenciais em logs.
+## Arquivos
 
-## Recebimento, envio e mídia
+| Arquivo | Para quê |
+|---|---|
+| `server.mjs` | Sessão Baileys + laço de sincronização com o site |
+| `store.mjs` | Diário SQLite: envios (antes do efeito externo), eventos pendentes, número esperado |
+| `data/status.json` | Diagnóstico lido por `windows/status.ps1` (sem segredos) |
+| `windows/*.ps1` | Instalar, executar (tarefa do Windows), ver status e desinstalar |
+| `*.test.mjs` | `npm test`: diário e sincronização contra um site falso local |
 
-Recebe mensagens novas individuais (incluindo eco de mensagens enviadas pelo celular), textos, imagens e áudios. Grupos, status e importação do histórico antigo não fazem parte desta entrega. LIDs são resolvidos para telefone quando o Baileys fornece o vínculo; mensagens ainda sem resolução não são associadas a clientes por adivinhação.
+## Segurança
 
-Receber mensagem nova reabre uma pendência; replay não reabre. Resolver é organização interna. Clientes, agenda e financeiro continuam separados. A restrição de 24h fica somente nos adaptadores das APIs oficiais; Baileys verifica sessão conectada e envio explícito. Não há disparos automáticos nem em massa.
+- Um conector atende uma única conta e um único número. Número diferente do já vinculado é recusado (no conector e no site).
+- `data/auth` guarda as credenciais do aparelho conectado: material sensível. O instalador restringe a pasta a Administradores e SYSTEM.
+- O log não registra textos, chaves, QR nem números completos.
+- Apenas conversas individuais novas. Grupos, status e histórico antigo não são importados.
 
-Texto até 4.096 caracteres; imagem JPEG/PNG até 5 MB, legenda até 1.024; áudio até 16 MB sem legenda. Formatos seguem a validação já existente no site; codecs não são convertidos e áudio não é gravado no navegador. O envio pode ser recusado pelo WhatsApp conforme formato/codec.
+## Limites
 
-Anexos recebidos ficam no volume privado do conector por até 30 dias, disponíveis apenas por proxy autenticado no site. Após expirar ou faltar arquivo, a conversa preserva o texto e orienta consulta no celular. Não é um arquivo permanente de mídia.
+Baileys é uma biblioteca independente, não oficial da Meta: não há garantia de estabilidade nem proteção contra restrições do número. Use com volume normal de conversa, sem disparos em massa. O computador precisa estar ligado e com internet para enviar e receber; mensagens recebidas com ele desligado chegam quando ele volta (o WhatsApp as entrega ao reconectar).
 
-O journal SQLite registra cada tentativa antes de chamar sendMessage. Repetir requestId com outro conteúdo é recusado. Resultado incerto não dispara outro envio; requer conferência manual. O journal de eventos mantém recebimentos/status para repetição assinada até confirmação do site. Conector fora do ar impede envio; é necessário recuperá-lo.
+Texto até 4.096 caracteres; imagem JPEG/PNG até 5 MB; áudio até 16 MB (sem legenda). Envio com resultado incerto nunca é repetido automaticamente: confira no celular.
 
-Desconectar tenta encerrar a sessão Baileys e apagar as credenciais de aparelho no conector, preservando mensagens no site. Se o conector estiver inacessível, a operação informa erro; remova o aparelho no próprio WhatsApp Business para revogar o acesso imediatamente.
-
-## Validação pendente
-
-Testes locais usam transporte simulado, SQLite real e biblioteca instalada. Pareamento com número real, retorno pelo domínio HTTPS definitivo, entrega e codecs reais continuam pendentes. Não anunciar integração ativa antes desses testes.
-
-Fontes: https://github.com/WhiskeySockets/Baileys e Example/example.ts do mesmo repositório. Dependência fixada em baileys 7.0.0-rc14; futuras atualizações exigem revisão das mudanças e novo teste real.
+Fontes: https://github.com/WhiskeySockets/Baileys. Dependência fixada em `baileys 7.0.0-rc14`; atualizações exigem revisão e novo teste real.
