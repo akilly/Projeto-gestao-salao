@@ -4,7 +4,7 @@ declare namespace Cloudflare {
     DB?: D1Database;
     BUCKET?: R2Bucket;
     WHATSAPP_ENCRYPTION_KEY?: string;
-    BAILEYS_BRIDGE_URL?: string;
-    BAILEYS_BRIDGE_KEY?: string;
+    /** Anexos do WhatsApp (Baileys): recebidos e a enviar, com expiração. */
+    MEDIA?: KVNamespace;
   }
 }

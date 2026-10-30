@@ -305,3 +305,9 @@ html .schedule-pills { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-
 html .overlap-pill { display: inline-flex; align-items: center; gap: 4px; }
 html .overlap-pill .icon { width: 12px; height: 12px; }
 html .appointment-block .overlap-pill { margin-top: 6px; font-size: 10px; }
+
+/* Conexão do WhatsApp: passos em lista legível */
+html .wa-onboarding .wa-checklist { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 12px 0 16px; padding: 0; list-style: none; }
+html .wa-onboarding .wa-checklist li { display: block; padding: 10px 12px; border-radius: 12px; background: var(--glass-tint); border: 1px solid var(--glass-tint-edge); }
+html .wa-onboarding .wa-checklist li strong { display: block; margin-bottom: 2px; }
+html .wa-onboarding .wa-checklist li p { margin: 0; color: var(--muted); }
