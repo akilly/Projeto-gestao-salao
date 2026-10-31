@@ -42,7 +42,26 @@ O script faz o build, aponta o Worker para o banco, aplica as migrações em `dr
 
 ## 4. Segredos do servidor
 
-O **código de configuração** cria a conta da titular e permite redefinir a senha depois. Use um valor longo e aleatório (mínimo 16 caracteres) e guarde-o em local seguro, como um gerenciador de senhas:
+### E-mails de acesso (recomendado)
+
+Com o envio de e-mails configurado, o **primeiro acesso** e o **"Esqueci minha senha"** funcionam por um link enviado ao e-mail da titular. O envio usa o **Brevo** (gratuito, 300 e-mails por dia):
+
+1. Crie a conta em brevo.com, confirme o e-mail remetente em **Remetentes** e gere uma chave em **SMTP e API → Chaves de API**.
+2. Rode o assistente. Ele confere a chave, envia um e-mail de teste e salva os segredos no Worker:
+
+```bash
+npm run email:configurar -- --nuvem
+```
+
+O assistente grava `BREVO_API_KEY`, `MAIL_FROM`, `MAIL_FROM_NAME` e `OWNER_EMAIL` (o único e-mail que pode receber o link de primeiro acesso). Defina também o endereço público usado nos links:
+
+```bash
+npx wrangler secret put APP_ORIGIN --name hanne-atelier   # ex.: https://hanne-atelier.SEU-USUARIO.workers.dev
+```
+
+### Código de configuração (alternativa sem e-mail)
+
+O **código de configuração** também cria a conta da titular e permite redefinir a senha. Use um valor longo e aleatório (mínimo 16 caracteres) e guarde-o em local seguro, como um gerenciador de senhas:
 
 ```bash
 npx wrangler secret put SETUP_TOKEN --name hanne-atelier
@@ -62,15 +81,15 @@ O conector do WhatsApp (Baileys) não precisa de nenhum secret extra: ele roda n
 
 ## 5. Primeiro acesso
 
-1. Abra o endereço publicado. A tela pede o código de configuração, o e-mail e a senha (mínimo 12 caracteres).
+1. Abra o endereço publicado. Com e-mail configurado, informe o e-mail da titular e abra o link recebido para criar a senha (mínimo 12 caracteres). Sem e-mail, a tela pede o código de configuração.
 2. **Trazendo dados da versão anterior:** antes de “Preparar operação”, vá em Configurações → **Restaurar cópia JSON** e escolha o arquivo baixado em “Cópia completa JSON” na versão antiga. A restauração só é aceita com a base vazia.
 3. Sem dados anteriores, siga por “Preparar operação”.
 
-Esqueceu a senha? Na tela de login, “Esqueci minha senha” pede o mesmo código de configuração. A redefinição encerra as sessões abertas em outros aparelhos.
+Esqueceu a senha? Na tela de login, “Esqueci minha senha” envia um link (válido por 30 minutos) para o e-mail da conta; sem e-mail configurado, pede o código de configuração. A redefinição encerra as sessões abertas em outros aparelhos.
 
 ## 6. WhatsApp por QR (Baileys)
 
-O conector roda separado, em um servidor Node sempre ligado (veja `services/baileys/README.md`). No `.env` do conector, `SITE_ORIGIN` deve ser exatamente o endereço publicado no passo 3, sem barra no final.
+O conector roda no computador do ateliê e chama o site (veja `docs/WHATSAPP_NO_COMPUTADOR.md`). Rode o instalador com `-Site` igual ao endereço publicado no passo 3, sem barra no final.
 
 ## Atualizações
 

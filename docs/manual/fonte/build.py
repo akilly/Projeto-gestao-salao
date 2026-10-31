@@ -42,7 +42,7 @@ pages.append('<section class="page toc"><div class="chip">Sumário</div><h2>O qu
 
 page('Primeiros passos', 'Entrar no sistema', 'Abra o endereço do ateliê no navegador do computador ou do celular.',
      steps(['Digite o <b>e-mail</b> da conta.', 'Digite a <b>senha</b>. Toque em <i>Mostrar</i> para conferir.', 'Toque em <b>Entrar</b>. A sessão dura até 12 horas.'])
-     + tip('No <b>primeiro acesso</b>, a tela pede o <b>código de configuração</b> e você cria sua senha (mínimo 12 caracteres). Esqueceu a senha? Use <i>Esqueci minha senha</i> com o mesmo código.'),
+     + tip('No <b>primeiro acesso</b>, informe seu e-mail: chega um <b>link para criar a senha</b> (mínimo 12 caracteres). Esqueceu a senha? Toque em <i>Esqueci minha senha</i> e abra o link que chega no e-mail (vale 30 minutos).'),
      shot('00-login'))
 
 page('Primeiros passos', 'Conhecendo a tela', 'Tudo fica no mesmo lugar em todas as páginas.',
