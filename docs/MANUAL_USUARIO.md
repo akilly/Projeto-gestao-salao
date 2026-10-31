@@ -4,7 +4,7 @@ Este manual orienta a Hanne no registro de clientes, agenda, atendimentos, receb
 
 ## Acesso e escolha dos dados
 
-Abra o endereço publicado do ateliê (por exemplo `https://hanne-atelier.SEU-USUARIO.workers.dev`) e entre com o e-mail e a senha da conta única da Hanne. No primeiro acesso, a tela pede o **código de configuração** (definido na publicação), o e-mail e uma senha de pelo menos 12 caracteres. Não envie a senha pelo chat. **Esqueci minha senha** pede o mesmo código e encerra as sessões antigas. A sessão dura até 12 horas; para sair, use Configurações → Sair da conta. No celular, use a barra inferior ou o botão de menu para abrir as áreas do sistema. A pesquisa no topo ajuda a localizar registros.
+Abra o endereço do ateliê e entre com o e-mail e a senha da conta única da Hanne. No **primeiro acesso**, informe o e-mail da titular: chega um link para criar a senha (mínimo 12 caracteres), válido por 24 horas. **Esqueci minha senha** envia um link válido por 30 minutos e encerra as sessões abertas em outros aparelhos. Os links só podem ser usados uma vez; não encaminhe esses e-mails. Sem e-mail configurado, a tela pede o código de configuração. A sessão dura até 12 horas; para sair, use Configurações → Sair da conta. No celular, use a barra inferior ou o botão de menu para abrir as áreas do sistema. A pesquisa no topo ajuda a localizar registros.
 
 Antes de digitar, confira a faixa no alto da página. “Demonstração com dados fictícios” indica um ambiente para testar; “Você está nos dados reais” indica a operação do negócio. Use “Abrir dados reais” ou “Ver dados fictícios” para alternar. As bases são separadas e alterações nos exemplos não alimentam o financeiro real. A escolha é lembrada no navegador.
 

@@ -20,7 +20,7 @@ const qr = await QRCode.toDataURL('Exemplo do manual Hanne - este QR nao conecta
 await sync({ status: 'pairing', qr, events: [], results: [] }); await sync({ status: 'pairing', qr, events: [], results: [] });
 await go(); await p.evaluate(() => document.querySelector('.wa-setup')?.scrollIntoView({ block: 'center' })); await p.waitForTimeout(300);
 await p.screenshot({ path: OUT + '22-whatsapp-qr.png' });
-const own = '+5511988887777', peer = '+5541990000001', now = Date.now();
+const own = '+5511988887777', peer = '+5541990000001';
 const ev = (id, body, mins) => ({ id: 'in:' + id, type: 'whatsapp.inbound_message.received', whatsappInboundMessage: { id, from: peer, to: own, type: 'text', text: { body }, sendTime: new Date(Date.now() - mins * 60000).toISOString(), customerProfile: { name: 'Mariana Costa' } } });
 console.log(await sync({ status: 'ready', phone: own, events: [ev('M1', 'Oi, Hanne! Tudo bem? Você tem horário amanhã à tarde para escova?', 12)], results: [] }));
 await go(); await p.locator('[data-action=wa-select]').first().click(); await p.waitForTimeout(800);

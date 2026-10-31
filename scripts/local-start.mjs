@@ -36,6 +36,8 @@ const vars = Object.fromEntries((existsSync(varsFile) ? readFileSync(varsFile, '
 let created = false;
 if (!vars.SETUP_TOKEN) { vars.SETUP_TOKEN = randomBytes(9).toString('hex').toUpperCase().match(/.{6}/g).join('-'); created = true; }
 if (!vars.WHATSAPP_ENCRYPTION_KEY) { vars.WHATSAPP_ENCRYPTION_KEY = randomBytes(32).toString('base64'); created = true; }
+// Links dos e-mails apontam sempre para este endereço (não para o Host enviado na requisição).
+if (!vars.APP_ORIGIN) { vars.APP_ORIGIN = `http://localhost:${port}`; created = true; }
 if (created) writeFileSync(varsFile, Object.entries(vars).map(([k, v]) => `${k}=${v}`).join('\n') + '\n', { mode: 0o600 });
 
 // 2. Compilação (primeira vez, ou --build depois de atualizar o código).
@@ -52,6 +54,7 @@ run(wrangler, ['d1', 'migrations', 'apply', built.d1_databases[0].binding, '--lo
 console.log(`\n=================================================================
  Hanne rodando neste computador:  http://localhost:${port}
  ${created ? `Primeiro acesso: use o código de configuração ${vars.SETUP_TOKEN}` : 'Código de configuração: veja SETUP_TOKEN no arquivo .dev.vars'}
+ E-mails (primeiro acesso e esqueci a senha): ${vars.BREVO_API_KEY && vars.MAIL_FROM ? 'configurados para ' + (vars.OWNER_EMAIL || '(defina OWNER_EMAIL)') : 'não configurados. Rode CONFIGURAR-EMAIL.cmd'}
  Deixe esta janela aberta. Para parar: Ctrl+C.
 =================================================================\n`);
 const server = spawn(process.execPath, ['--import', './scripts/sites-env.mjs', wrangler, 'dev', '--config', 'dist/server/wrangler.json', '--local', '--persist-to', state, '--env-file', varsFile, '--ip', '127.0.0.1', '--port', String(port), '--inspector-port', '0', '--show-interactive-dev-session=false'], { cwd: root, stdio: 'inherit', env });

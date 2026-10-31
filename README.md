@@ -59,7 +59,7 @@ Detalhes de cada arquivo: [docs/MAPA_ARQUIVOS.md](docs/MAPA_ARQUIVOS.md).
 
 ## Regras importantes
 
-- **Conta única:** só a titular entra. O primeiro acesso pede o código de configuração (`SETUP_TOKEN`); o mesmo código redefine a senha.
+- **Conta única:** só a titular entra. Primeiro acesso e "Esqueci minha senha" por link no e-mail (Brevo) ou pelo código de configuração (`SETUP_TOKEN`).
 - **Gravação segura:** o estado é salvo no D1 com revisão otimista e auditoria na mesma transação. Edição concorrente gera conflito explícito, sem perder o rascunho.
 - **Histórico financeiro preservado:** valores confirmados não são sobrescritos; exclusões seguem um plano de cascata validado pelo servidor.
 - **Demonstração isolada:** `/?dados=exemplo` usa outra base; a API recusa gravar dados fictícios na base real.
@@ -86,6 +86,7 @@ O servidor também mantém o adaptador da **API oficial da Meta** (sem botão na
 | [REFERENCIA_FUNCOES.md](docs/REFERENCIA_FUNCOES.md) | Desenvolvimento | Catálogo das funções |
 | [MAPA_ARQUIVOS.md](docs/MAPA_ARQUIVOS.md) | Desenvolvimento | O que cada arquivo faz |
 | [EXCLUSAO_REGISTROS.md](docs/EXCLUSAO_REGISTROS.md) | Desenvolvimento | Regras de exclusão e cascata |
+| [SEGURANCA.md](docs/SEGURANCA.md) | Desenvolvimento | Revisão de segurança, proteções e riscos conhecidos |
 | [DESIGN.md](DESIGN.md), [SISTEMA_VISUAL.md](docs/SISTEMA_VISUAL.md), [UX-CONTRACT.md](UX-CONTRACT.md) | Design | Identidade visual, componentes e comportamento |
 
 Ao mudar uma tela, um cálculo, um limite ou um contrato da API, atualize também o documento correspondente.
