@@ -1,7 +1,7 @@
 # Manual da usuária (com prints)
 
 - **[Manual-Hanne.pdf](Manual-Hanne.pdf)**: 27 páginas em formato apresentação (16:9), com as telas do sistema e marcadores numerados.
-- Também importado no Canva para edição.
+- Versão editável no Canva com o mesmo roteiro (a titular pode importar este PDF no Canva para ter os prints lá também).
 
 ## Como atualizar os prints
 
