@@ -43,4 +43,6 @@ export const waOutbox = sqliteTable('wa_outbox', {
 /** Conta da profissional: derivação de senha, sessões revogáveis e limite de tentativas. */
 export const salonCredentials=sqliteTable('salon_credentials',{id:integer('id').primaryKey(),ownerId:text('owner_id').notNull(),email:text('email').notNull(),salt:text('salt').notNull(),passwordHash:text('password_hash').notNull()});
 export const salonSessions=sqliteTable('salon_sessions',{tokenHash:text('token_hash').primaryKey(),ownerId:text('owner_id').notNull(),expiresAt:integer('expires_at').notNull()});
+/** Links de uso único (primeiro acesso / redefinição de senha); só o hash do token é guardado. */
+export const salonTokens=sqliteTable('salon_tokens',{tokenHash:text('token_hash').primaryKey(),kind:text('kind').notNull(),email:text('email').notNull(),expiresAt:integer('expires_at').notNull(),createdAt:integer('created_at').notNull()});
 export const salonLoginLimits=sqliteTable('salon_login_limits',{bucket:text('bucket').primaryKey(),attempts:integer('attempts').notNull(),resetAt:integer('reset_at').notNull()});
