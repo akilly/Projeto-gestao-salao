@@ -77,7 +77,7 @@ O servidor também mantém o adaptador da **API oficial da Meta** (sem botão na
 
 | Documento | Para quem | Conteúdo |
 |---|---|---|
-| [MANUAL_USUARIO.md](docs/MANUAL_USUARIO.md) | Profissional | Rotina de uso, tela por tela |
+| [MANUAL_USUARIO.md](docs/MANUAL_USUARIO.md) e [Manual com prints (PDF)](docs/manual/Manual-Hanne.pdf) | Profissional | Rotina de uso, tela por tela |
 | [DEPLOY.md](DEPLOY.md) | Quem publica | Publicação na Cloudflare, segredos e primeiro acesso |
 | [WHATSAPP_NO_COMPUTADOR.md](docs/WHATSAPP_NO_COMPUTADOR.md) | Profissional | Instalar o conector do WhatsApp no Windows |
 | [DOCUMENTACAO_TECNICA.md](docs/DOCUMENTACAO_TECNICA.md) | Desenvolvimento | Arquitetura, modelo de dados, API, cálculos e segurança |

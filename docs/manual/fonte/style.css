@@ -1,0 +1,62 @@
+@page { size: 1920px 1080px; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --ink: #1f1a2b; --muted: #6b6478; --brand: #6b3fc4; --brand-2: #8b5cf6; --soft: #f3effb; --bg: #faf8fd; --line: #e7e1f2; --red: #c2334d; }
+body { font-family: Inter, sans-serif; color: var(--ink); background: #ddd; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.page { width: 1920px; height: 1080px; position: relative; overflow: hidden; background: var(--bg); display: grid; grid-template-columns: 620px 1fr; gap: 56px; padding: 64px 80px 90px; page-break-after: always; break-after: page; }
+.page::before { content: ""; position: absolute; width: 900px; height: 900px; right: -300px; top: -420px; background: radial-gradient(circle, rgba(139,92,246,.16), transparent 65%); pointer-events: none; }
+.left { display: flex; flex-direction: column; justify-content: center; position: relative; z-index: 1; }
+.chip { display: inline-block; align-self: flex-start; padding: 10px 20px; border-radius: 999px; background: var(--soft); color: var(--brand); font-weight: 700; font-size: 20px; letter-spacing: .02em; margin-bottom: 22px; }
+h2 { font-family: 'Inter Display', Inter, sans-serif; font-size: 56px; line-height: 1.05; font-weight: 800; letter-spacing: -.02em; margin-bottom: 18px; }
+.lead { font-size: 23px; line-height: 1.45; color: var(--muted); margin-bottom: 28px; }
+.steps { list-style: none; display: grid; gap: 14px; }
+.steps li { display: grid; grid-template-columns: 48px 1fr; gap: 18px; align-items: start; font-size: 21px; line-height: 1.4; }
+.steps li > b { width: 48px; height: 48px; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; font-size: 22px; font-weight: 800; box-shadow: 0 6px 16px rgba(107,63,196,.35); }
+.steps li div { padding-top: 7px; }
+.tip { margin-top: 24px; padding: 18px 22px; border-radius: 18px; background: #fff; border: 2px solid var(--line); font-size: 19px; line-height: 1.45; color: #3a3346; }
+.tip span { display: block; font-weight: 800; color: var(--brand); text-transform: uppercase; font-size: 15px; letter-spacing: .1em; margin-bottom: 6px; }
+.right { display: flex; align-items: center; justify-content: center; position: relative; z-index: 1; }
+.shot { position: relative; width: 100%; border-radius: 22px; overflow: visible; box-shadow: 0 30px 80px rgba(60,30,120,.18), 0 0 0 1px rgba(60,30,120,.08); background: #fff; }
+.shot img { width: 100%; display: block; border-radius: 22px; }
+.ring { position: absolute; margin: -8px 0 0 -8px; padding: 5px; box-sizing: content-box; border: 3px solid #f43f8e; border-radius: 12px; box-shadow: 0 0 0 4px rgba(244,63,142,.15); }
+.pin { position: absolute; transform: translate(-80%, -80%); width: 40px; height: 40px; border-radius: 50%; background: #f43f8e; color: #fff; font-weight: 800; font-size: 19px; display: grid; place-items: center; border: 3px solid #fff; box-shadow: 0 6px 16px rgba(0,0,0,.25); }
+footer { position: absolute; left: 80px; right: 80px; bottom: 34px; display: flex; justify-content: space-between; font-size: 16px; color: #a39db0; }
+footer .num { font-weight: 700; color: var(--brand); }
+/* capa */
+.cover { grid-template-columns: 760px 1fr; background: linear-gradient(135deg, #2a1650 0%, #4b2591 55%, #7b4fd6 100%); color: #fff; }
+.cover::before { background: radial-gradient(circle, rgba(255,255,255,.18), transparent 65%); }
+.cover-text { display: flex; flex-direction: column; justify-content: center; position: relative; z-index: 1; }
+.logo { font-size: 46px; font-weight: 800; display: flex; align-items: center; gap: 16px; margin-bottom: 60px; }
+.logo i { width: 70px; height: 70px; border-radius: 18px; background: linear-gradient(135deg, #8b5cf6, #5b2bb5); display: grid; place-items: center; font-family: 'Bitstream Charter', serif; font-size: 44px; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+.logo b { color: #c4a6ff; }
+.cover h1 { font-family: 'Inter Display', Inter, sans-serif; font-size: 112px; white-space: nowrap; font-weight: 800; letter-spacing: -.03em; line-height: 1; margin-bottom: 30px; }
+.cover .sub { font-size: 34px; line-height: 1.4; color: #e6dcff; }
+.cover .sub em { font-family: 'Bitstream Charter', serif; font-style: italic; color: #fff; }
+.cover .meta { margin-top: 50px; font-size: 20px; color: #c9b8f2; }
+.cover-art { position: relative; display: flex; align-items: center; }
+.cover-art .shot { width: 980px; transform: rotate(-3deg); box-shadow: 0 40px 100px rgba(0,0,0,.45); }
+.phone { width: 300px; border-radius: 42px; padding: 12px; background: #15121c; box-shadow: 0 30px 70px rgba(0,0,0,.35); }
+.phone img { width: 100%; border-radius: 32px; display: block; }
+.cover-phone { position: absolute; right: 10px; bottom: -40px; transform: rotate(4deg); width: 280px; }
+/* sumário */
+.toc, .routine, .faq { display: block; padding: 90px 110px; }
+.toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px 60px; margin-top: 40px; }
+.toc-item { display: grid; grid-template-columns: 90px 1fr; align-items: center; background: #fff; border: 2px solid var(--line); border-radius: 22px; padding: 24px 28px; }
+.toc-item b { font-size: 44px; font-weight: 800; color: var(--brand-2); }
+.toc-item h3 { font-size: 28px; margin-bottom: 4px; }
+.toc-item p { font-size: 19px; color: var(--muted); }
+/* celular */
+.phones { gap: 40px; }
+.phones .phone { width: 330px; }
+/* rotina */
+.cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; margin-top: 20px; }
+.col { background: #fff; border: 2px solid var(--line); border-radius: 26px; padding: 36px; }
+.col .big { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--brand); color: #fff; font-size: 30px; font-weight: 800; margin-bottom: 20px; }
+.col h3 { font-size: 32px; margin-bottom: 18px; }
+.col ul { padding-left: 24px; display: grid; gap: 14px; font-size: 23px; line-height: 1.4; }
+.routine .tip { max-width: 1100px; }
+/* dúvidas */
+.faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px 40px; margin-top: 36px; }
+.q { background: #fff; border: 2px solid var(--line); border-radius: 22px; padding: 26px 30px; }
+.q h3 { font-size: 26px; margin-bottom: 10px; color: var(--brand); }
+.q p { font-size: 21px; line-height: 1.45; color: #3a3346; }
+.end { margin-top: 40px; font-size: 28px; font-family: 'Bitstream Charter', serif; font-style: italic; color: var(--brand); text-align: center; }
