@@ -285,12 +285,8 @@ html .setting-row { background: transparent; }
 html [data-salon-logout] { text-decoration: none; }
 /* Celular: o filtro da lista ganha a linha inteira em vez de ficar espremido. */
 @media (max-width: 640px) { html #main .toolbar { flex-wrap: wrap; } html #main .toolbar > select { flex: 1 1 100%; width: 100%; } }
-/* Rodapé (e cabeçalho) fixos das janelas: vidro fosco próprio para o conteúdo não aparecer por baixo ao rolar. */
-html dialog .dialog-footer, html dialog .dialog-head {
-  background: color-mix(in srgb, var(--surface-solid) 84%, transparent);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  backdrop-filter: blur(18px) saturate(160%);
-}
+/* Rodapé (e cabeçalho) fixos das janelas: fundo opaco para o texto rolado não aparecer por baixo dos botões. */
+html dialog .dialog-footer, html dialog .dialog-head { background: var(--surface-solid); }
 html dialog .dialog-footer { border-radius: 0 0 22px 22px; }
 html dialog .dialog-head { border-radius: 22px 22px 0 0; }
 
