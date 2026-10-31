@@ -28,6 +28,10 @@ Ele confere a chave, manda um e-mail de teste e salva tudo em `.dev.vars`. Depoi
 - Depois de atualizar o código (`git pull`), abra com `INICIAR-HANNE.cmd --build` para compilar de novo.
 - Em outros sistemas: `pnpm install` e depois `npm run local -- --open`.
 
+### Inteligência artificial (opcional)
+
+Dê duplo clique em **`CONFIGURAR-IA.cmd`**. Ele abre o login da Cloudflare (conta gratuita) e liga a classificação, o resumo e a sugestão de resposta. Depois, feche e abra o `INICIAR-HANNE.cmd`. Mais em [INTELIGENCIA_ARTIFICIAL.md](INTELIGENCIA_ARTIFICIAL.md).
+
 ## 2. WhatsApp com o sistema no computador
 
 O conector funciona do mesmo jeito, apontando para o endereço local. No PowerShell **como Administrador**, dentro da pasta do projeto:

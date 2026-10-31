@@ -4,7 +4,7 @@ Este manual orienta a Hanne no registro de clientes, agenda, atendimentos, receb
 
 ## Acesso e escolha dos dados
 
-Abra o endereço do ateliê e entre com o e-mail e a senha da conta única da Hanne. No **primeiro acesso**, informe o e-mail da titular: chega um link para criar a senha (mínimo 12 caracteres), válido por 24 horas. **Esqueci minha senha** envia um link válido por 30 minutos e encerra as sessões abertas em outros aparelhos. Os links só podem ser usados uma vez; não encaminhe esses e-mails. Sem e-mail configurado, a tela pede o código de configuração. A sessão dura até 12 horas; para sair, use Configurações → Sair da conta. No celular, use a barra inferior ou o botão de menu para abrir as áreas do sistema. A pesquisa no topo ajuda a localizar registros.
+Abra o endereço do ateliê e entre com o e-mail e a senha da conta única da Hanne. No **primeiro acesso**, informe o e-mail da titular: chega um link para criar a senha (mínimo 12 caracteres), válido por 24 horas. **Esqueci minha senha** envia um link válido por 30 minutos e encerra as sessões abertas em outros aparelhos. Os links só podem ser usados uma vez; não encaminhe esses e-mails. Sem e-mail configurado, a tela pede o código de configuração. A sessão dura até 12 horas. Em **Configurações → Sua conta** você troca a senha (pede a atual e desconecta os outros aparelhos) e sai da conta. No celular, use a barra inferior ou o botão de menu para abrir as áreas do sistema. A pesquisa no topo ajuda a localizar registros.
 
 Antes de digitar, confira a faixa no alto da página. “Demonstração com dados fictícios” indica um ambiente para testar; “Você está nos dados reais” indica a operação do negócio. Use “Abrir dados reais” ou “Ver dados fictícios” para alternar. As bases são separadas e alterações nos exemplos não alimentam o financeiro real. A escolha é lembrada no navegador.
 
@@ -219,6 +219,17 @@ A mensagem aparece **Na fila do conector** até o computador enviá-la (alguns s
 Resolver organiza a caixa, sem finalizar um serviço; nova mensagem reabre a pendência. O painel e o menu somam pendências do WhatsApp e das notas. Rascunhos ficam na memória enquanto você troca de conversa ou tela. **Desconectar** encerra a sessão no computador e preserva as conversas salvas. Excluir conversa ou mensagem apaga o conteúdo do sistema, não do celular da cliente.
 
 Modo de foco ajuda a reduzir a apresentação de pendências comuns; alertas de segurança continuam destacados. Ele não substitui a conferência de mensagens no canal externo.
+
+### Ajuda da inteligência artificial
+
+Nas conversas, a IA ajuda sem enviar nada sozinha:
+
+- **Etiqueta automática:** conversas novas do WhatsApp recebem uma etiqueta (por exemplo *Segurança · alta* ou *Orçamento*). Use a etiqueta para decidir quem responder primeiro.
+- **Resumir com IA:** mostra em poucas frases o que a cliente pediu e o que falta responder.
+- **Sugerir resposta:** escreve um rascunho com o nome da cliente e o contexto do sistema. **Revise e edite antes de enviar.** A IA não confirma preços nem horários por conta própria.
+- **Notas internas:** no lápis de classificação, **Sugerir com IA** propõe a categoria, que só vale quando você confirma.
+
+A cota gratuita renova todo dia às 21h. Se acabar, os botões avisam e voltam a funcionar no dia seguinte.
 
 ## Orçamentos e tarefas
 

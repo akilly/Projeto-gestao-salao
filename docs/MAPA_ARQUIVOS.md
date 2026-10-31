@@ -11,6 +11,7 @@ O que cada arquivo versionado faz. Cada módulo também tem um comentário de ca
 | `app/layout.tsx` | Layout mínimo exigido pelo Vinext |
 | `app/api/state/route.ts` | `/api/state`: lê, grava e exclui o estado do ateliê (encaminha para `lib/state-handler.mjs`) |
 | `app/api/auth/[...path]/route.ts` | `/api/auth/*`: conta, login, logout e senha (encaminha para `lib/salon-auth.mjs`) |
+| `app/api/ai/[task]/route.ts` | `/api/ai/*`: classificação, resumo, sugestão de resposta e status da IA (encaminha para `lib/ai.mjs`) |
 | `app/api/whatsapp/[...path]/route.ts` | `/api/whatsapp/*`: canal de WhatsApp (encaminha para `lib/whatsapp-handler.mjs`) |
 
 ## Servidor (regras)
@@ -19,6 +20,7 @@ O que cada arquivo versionado faz. Cada módulo também tem um comentário de ca
 |---|---|
 | `lib/state-handler.mjs` | Persistência do estado no D1 com revisão otimista, auditoria, base de demonstração isolada e exclusão por plano confirmado |
 | `lib/salon-auth.mjs` | Conta única: PBKDF2, sessões opacas, limite de tentativas, links de acesso por e-mail, confirmação de senha para exclusões |
+| `lib/ai.mjs` | IA (Workers AI): prompts, validação das respostas, limite diário e rota |
 | `lib/mailer.mjs` | Envio de e-mails pelo Brevo e modelo do e-mail de acesso |
 | `lib/security-headers.mjs` | Cabeçalhos de segurança das páginas (CSP, anti-iframe, Referrer-Policy, HSTS) |
 | `lib/whatsapp-handler.mjs` | Canal de WhatsApp: conexão, conversas, envio, anexos, sincronização do conector Baileys e webhook da Meta |
@@ -65,6 +67,7 @@ O que cada arquivo versionado faz. Cada módulo também tem um comentário de ca
 | Arquivo | Papel |
 |---|---|
 | `scripts/deploy-cloudflare.mjs` | `npm run deploy:cloudflare`: build, migrações remotas e publicação |
+| `scripts/configurar-ia.mjs`, `CONFIGURAR-IA.cmd` | `npm run ia:configurar`: login na Cloudflare e liga a IA no computador |
 | `scripts/configurar-email.mjs`, `CONFIGURAR-EMAIL.cmd` | `npm run email:configurar`: configura o Brevo (local ou `--nuvem`) e manda e-mail de teste |
 | `scripts/local-start.mjs`, `INICIAR-HANNE.cmd` | `npm run local`: roda o sistema no computador (http://localhost:8787) com banco local |
 | `scripts/run-tests.mjs` | `npm test`: roda a suíte |
@@ -85,6 +88,7 @@ O que cada arquivo versionado faz. Cada módulo também tem um comentário de ca
 | `deletion.test.mjs`, `deletion-cascade.test.mjs` | Exclusões |
 | `persistence.test.mjs`, `salon-auth.test.mjs` | API, isolamento de contas, login e sessões (SQLite real) |
 | `whatsapp.test.mjs`, `baileys.test.mjs`, `meta-cloud.test.mjs`, `wa-link.test.mjs` | Canal de WhatsApp |
+| `ai.test.mjs`, `security-headers.test.mjs` | IA (modelo simulado) e cabeçalhos de segurança |
 | `finance-charts.test.mjs`, `pending-ui.test.mjs`, `theme.test.mjs`, `examples.test.mjs` | Gráficos, contadores da interface, tema e demonstração |
 
 ## Documentação

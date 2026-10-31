@@ -18,6 +18,8 @@ export const waConnections = sqliteTable('wa_connections', {
 export const waThreads = sqliteTable('wa_threads', {
   id: text('id').primaryKey(), channelId: text('channel_id').notNull(), peer: text('peer').notNull(), name: text('name').notNull(),
   lastInbound: text('last_inbound'), lastAt: text('last_at').notNull(), resolved: integer('resolved').notNull().default(0),
+  // Sugestão da IA (migração 0006): categoria, prioridade, motivo e a última mensagem considerada.
+  aiCategory: text('ai_category'), aiPriority: text('ai_priority'), aiReason: text('ai_reason'), aiAt: text('ai_at'),
 }, t => [uniqueIndex('wa_thread_peer').on(t.channelId, t.peer), index('wa_thread_latest').on(t.channelId, t.lastAt)]);
 /** Tentativa de envio única; status de transporte é independente de pagamento. */
 export const waMessages = sqliteTable('wa_messages', {
@@ -46,3 +48,6 @@ export const salonSessions=sqliteTable('salon_sessions',{tokenHash:text('token_h
 /** Links de uso único (primeiro acesso / redefinição de senha); só o hash do token é guardado. */
 export const salonTokens=sqliteTable('salon_tokens',{tokenHash:text('token_hash').primaryKey(),kind:text('kind').notNull(),email:text('email').notNull(),expiresAt:integer('expires_at').notNull(),createdAt:integer('created_at').notNull()});
 export const salonLoginLimits=sqliteTable('salon_login_limits',{bucket:text('bucket').primaryKey(),attempts:integer('attempts').notNull(),resetAt:integer('reset_at').notNull()});
+
+/** Contador diário de chamadas de IA por tarefa (protege a cota gratuita do Workers AI). */
+export const aiUsage = sqliteTable('ai_usage', { day: text('day').notNull(), task: text('task').notNull(), calls: integer('calls').notNull() }, t => [primaryKey({ columns: [t.day, t.task] })]);

@@ -46,3 +46,15 @@ test('link expirado, Brevo fora do ar, sem configuração e limite de pedidos',a
   const limited=database();let last;for(let i=0;i<6;i++)last=await handleAuth(req('request-link',{email:'x'+i+'@exemplo.com',purpose:'reset'}),limited,mailEnv,brevo().fetcher);assert.equal(last.status,429);
   assert.equal((await handleAuth(req('complete',{token:'../../x',password:'outra-senha-segura-1'}),db,mailEnv)).status,400);assert.equal((await handleAuth(req('request-link',{email:'hanne@example.com',purpose:'reset'},{Origin:'https://evil.test'}),db,mailEnv)).status,403);});
 test('APP_ORIGIN inválido cai na origem da requisição; e-mail escapa o link',async()=>{const db=database(),b=brevo();await handleAuth(req('request-link',{email:'hanne@example.com',purpose:'setup'}),db,{...mailEnv,APP_ORIGIN:'http://evil.test'},b.fetcher);assert.match(b.sent[0].htmlContent,/https:\/\/hanne\.test\/login\?acesso=/);});
+
+test('trocar senha exige sessão e a senha atual, encerra as outras sessões e mantém esta',async()=>{const db=database();const first=await handleAuth(req('setup',withCode),db,env),cookie=first.headers.get('set-cookie').split(';')[0];const other=(await handleAuth(req('login',credentials),db,env)).headers.get('set-cookie').split(';')[0];
+  assert.equal((await handleAuth(req('change-password',{currentPassword:credentials.password,newPassword:'nova-senha-segura-9'}),db,env)).status,401,'sem sessão');
+  assert.equal((await handleAuth(req('change-password',{currentPassword:'errada',newPassword:'nova-senha-segura-9'},{cookie}),db,env)).status,403);
+  assert.equal((await handleAuth(req('change-password',{currentPassword:credentials.password,newPassword:'curta'},{cookie}),db,env)).status,400);
+  assert.equal((await handleAuth(req('change-password',{currentPassword:credentials.password,newPassword:credentials.password},{cookie}),db,env)).status,400);
+  const changed=await handleAuth(req('change-password',{currentPassword:credentials.password,newPassword:'nova-senha-segura-9'},{cookie}),db,env);assert.equal(changed.status,200);
+  const renewed=changed.headers.get('set-cookie').split(';')[0];assert.ok(await salonIdentity(new Request(origin,{headers:{cookie:renewed}}),db));
+  assert.equal(await salonIdentity(new Request(origin,{headers:{cookie:other}}),db),null,'outro aparelho saiu');assert.equal(await salonIdentity(new Request(origin,{headers:{cookie}}),db),null);
+  assert.equal((await handleAuth(req('login',credentials),db,env)).status,401);assert.equal((await handleAuth(req('login',{...credentials,password:'nova-senha-segura-9'}),db,env)).status,200);
+  const status=await (await handleAuth(new Request(origin+'/api/auth/status',{headers:{cookie:renewed}}),db,env)).json();assert.equal(status.email,'hanne@example.com');
+  assert.equal((await (await handleAuth(new Request(origin+'/api/auth/status'),db,env)).json()).email,undefined,'sem sessão não mostra o e-mail');});

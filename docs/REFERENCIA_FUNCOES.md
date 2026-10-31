@@ -281,3 +281,19 @@ As funções abaixo estão comentadas junto à implementação. A lista cobre as
 - `metaRequest/metaErrorReason`: transporte oficial e orientações de erro sem expor credenciais.
 - `normalizeMetaEvents/verifyMetaSignature/safeMetaMediaURL`: tradução, autenticidade e limite do download.
 - `setupPanel`: mostra confirmações observadas e valores de callback do titular; não simula QR ou recebimento real.
+
+
+## Inteligência artificial (`lib/ai.mjs`)
+
+- `classify`: categoria e prioridade, sempre dentro da lista; segurança é sempre prioridade alta.
+- `summarize` / `suggestReply`: resumo curto e rascunho de resposta com o contexto da cliente.
+- `normalizeMessages`: limita o histórico (20 mensagens, 6.000 caracteres) mantendo o final.
+- `takeQuota`: contador diário por tarefa (`ai_usage`).
+- `handleAI`: rota `/api/ai/*` (sessão, origem, cota, erros amigáveis).
+- `classifyPending` (`lib/whatsapp-handler.mjs`): classifica até 2 conversas com mensagem nova a cada consulta da lista.
+- Interface: `aiRun`, `aiContext`, `aiNote` (`public/app.js`) e `runAI` (`public/whatsapp.js`).
+
+## Conta
+
+- `changePassword` (`lib/salon-auth.mjs`): troca com a senha atual, encerra as outras sessões e renova a atual.
+- `passwordForm` (`public/app.js`): janela de troca de senha em Configurações → Sua conta.
