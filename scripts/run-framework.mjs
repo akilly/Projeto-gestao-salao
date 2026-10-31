@@ -1,3 +1,4 @@
+/** `npm run dev` e `npm run build`: executa o Vinext/Vite com o perfil de execução do ambiente. */
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { readExecutionProfile } from "./execution-profile.mjs";

@@ -1,7 +1,10 @@
+/** Exclusão sem cascata: vínculos bloqueiam a remoção e o servidor recusa snapshots que apaguem registros vinculados. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { blankState, validateState } from '../public/domain.js';
-import { deletionBlock, deleteRecord } from '../public/deletion.js';
+import { deletionBlock } from '../public/deletion.js';
+/** Simula a exclusão simples (sem cascata) como a validação do servidor a enxerga. */
+function deleteRecord(state, collection, id) { const issue = deletionBlock(state, collection, id); if (issue) throw Error(issue); const next = structuredClone(state); next[collection] = next[collection].filter(x => x.id !== id); return next; }
 test('excluir cliente sem vínculo preserva original e valida no servidor',()=>{const s=blankState();s.clients.push({id:'c',name:'Cliente',phone:'41999999999',status:'permanent'});const next=deleteRecord(s,'clients','c');assert.equal(next.clients.length,0);assert.equal(s.clients.length,1);validateState(next,s);});
 test('agendamento impede exclusão de cliente e serviço; remover horário libera ambos',()=>{const s=blankState();s.clients.push({id:'c',name:'Cliente',phone:'41999999999',status:'permanent'});s.appointments.push({id:'a',clientId:'c',serviceId:s.services[0].id,date:'2026-10-24',time:'10:00',duration:60,buffer:0,status:'pending'});assert.throws(()=>deleteRecord(s,'clients','c'),/vínculo/);assert.throws(()=>deleteRecord(s,'services',s.services[0].id),/vínculo/);const next=deleteRecord(s,'appointments','a');validateState(next,s);assert.equal(deletionBlock(next,'clients','c'),'');});
 test('API rejeita exclusão direta de cadastro vinculado mesmo apagando vínculo no mesmo snapshot',()=>{const s=blankState();s.clients.push({id:'c',name:'Cliente',phone:'41999999999',status:'permanent'});s.appointments.push({id:'a',clientId:'c',serviceId:s.services[0].id,date:'2026-10-24',time:'10:00',duration:60,buffer:0,status:'pending'});const next=structuredClone(s);next.clients=[];next.appointments=[];assert.throws(()=>validateState(next,s),/vínculo/);});

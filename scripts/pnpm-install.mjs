@@ -1,3 +1,4 @@
+/** Infraestrutura do modelo de projeto: instalação via pnpm com verificação do lockfile. */
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import {

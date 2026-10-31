@@ -249,14 +249,27 @@ As funções abaixo estão comentadas junto à implementação. A lista cobre as
 
 ## Canal WhatsApp
 
-- `handleWhatsApp`: autoriza e despacha configuração, mensagens, mídia e webhooks.
-- `connect`: verifica número na conta YCloud, cifra credenciais e configura recebimento.
-- `send`: valida janela e arquivo, reserva tentativa e despacha sem repetição automática.
-- `webhook`: verifica HMAC e confirma evento/efeitos de forma atômica.
-- `ycloud`: HTTP com chave apenas ao host oficial e timeout; sem logs de segredo.
-- `encrypt/decrypt`: AES-GCM com vínculo à conta. `verifySignature`: HMAC dos bytes originais.
-- `windowOpen/peerOf/validateMedia/safeMediaURL`: regras de prazo, identidade e anexos.
-- `createWhatsAppUI`: caixa, compositor, rascunhos, paginação, polling e configuração; reutiliza diálogos/campos/toast do aplicativo.
+- `handleWhatsApp`: autoriza e despacha configuração, conversas, envio, mídia, sincronização do conector e webhook da Meta.
+- `send`: valida arquivo e tentativa; Baileys coloca na fila (`wa_outbox`), Meta despacha dentro da janela de 24 h. Nunca repete sozinho.
+- `processChannelEvent`: grava eventos normalizados de qualquer provedor com deduplicação atômica.
+- `encrypt/decrypt`: AES-GCM com vínculo à conta.
+- `windowOpen/peerOf/phone/validateMedia/mediaMime`: prazo, identidade, telefone e anexos.
+- `createWhatsAppUI`: caixa, compositor, rascunhos, paginação, polling e conexão; reutiliza diálogos/campos/toast do aplicativo.
+
+## Conector Baileys (lado do site)
+
+- `connectBaileys`: guarda o hash e a cifra da chave do conector e agenda o comando `pair`.
+- `describeBaileys`: estado lido do banco (online, QR, número), com orientação quando o conector não aparece.
+- `bridgeSync`: recebe status/QR/eventos/resultados e devolve confirmações, fila e comandos.
+- `bridgeMediaUpload/bridgeOutboxMedia`: anexos recebidos e a enviar no Workers KV.
+
+## Conector Baileys (computador do ateliê, `services/baileys`)
+
+- `sync/loop`: ciclo de sincronização com intervalo indicado pelo site.
+- `start/logout`: abre, retoma ou encerra a sessão do WhatsApp.
+- `receive/uploadMedia`: guarda mensagens recebidas e envia o anexo antes do evento.
+- `sendItem`: envia um item da fila com diário anti-duplicação.
+- `openStore` (`store.mjs`): diário SQLite de envios, eventos e número esperado.
 
 
 ## Conexão direta Meta

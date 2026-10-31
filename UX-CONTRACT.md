@@ -34,11 +34,11 @@ Seleção de tabela em massa não existe neste escopo.
 
 ## Canal WhatsApp
 
-Contrato de domínio: `docs/INTEGRACAO_WHATSAPP.md`, API YCloud v2 e `lib/whatsapp-domain.mjs`. `public/whatsapp.js` é proprietário do transporte e da caixa, reutilizando campos, validação, toast e diálogos de `app.js`. Mensagens e status não usam snapshots financeiros.
+Contrato de domínio: `docs/INTEGRACAO_WHATSAPP.md`, `docs/INTEGRACAO_BAILEYS.md` e `lib/whatsapp-domain.mjs`. `public/whatsapp.js` é proprietário do transporte e da caixa, reutilizando campos, validação, toast e diálogos de `app.js`. Mensagens e status não usam snapshots financeiros.
 
-Configuração verifica a chave e a propriedade do número no servidor, cria/reutiliza o webhook e mostra separadamente o primeiro evento recebido. QR Code pertence ao fluxo oficial do YCloud; a titular precisa concluir o vínculo. Nenhum segredo volta na API. Desconectar pede confirmação, remove as chaves locais e preserva o histórico; não desativa a conta no provedor.
+Conexão (Baileys): a titular cola a chave gerada pelo instalador do conector; o QR Code real aparece na tela assim que o conector sincroniza. A tela mostra se o conector está online e orienta quando não está. Nenhum segredo volta na API. Desconectar pede confirmação, encerra a sessão no computador e preserva o histórico.
 
-Resposta tem tentativa única. Duplo clique/repetição reutiliza o identificador; resultado incerto exige Conferir tentativa. Só há novo envio após confirmação explícita do usuário. O campo é preservado em falhas definitivas e fica bloqueado na incerteza. Já conferi no YCloud permite encerrar essa conferência, sem cancelar a tentativa anterior. A validação do prazo de 24h ocorre no servidor e novamente após upload.
+Resposta tem tentativa única. Duplo clique/repetição reutiliza o identificador. No Baileys a mensagem fica "Na fila do conector" até o computador confirmar; resultado incerto exige conferir no celular e nunca é reenviado sozinho. O campo é preservado em falhas definitivas. Na API oficial da Meta, o prazo de 24 h é validado no servidor e de novo após o upload.
 
 Rascunhos ficam em memória por conversa, inclusive ao trocar de tela. Recarregar/fechar avisa quando há rascunho. Polling ignora respostas antigas e não substitui o compositor; a caixa informa falhas de consulta e permite Atualizar. Caixa e histórico paginam sem excluir registros. Resolver é uma organização interna, não envia mensagem, não finaliza atendimento e não marca leitura no telefone. Nova mensagem de cliente reabre a pendência; replay não reabre. O contador do menu e o indicador do painel somam WhatsApp e notas internas. A demonstração não acessa o canal real.
 

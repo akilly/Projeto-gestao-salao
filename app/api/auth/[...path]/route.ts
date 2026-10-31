@@ -1,3 +1,4 @@
+/** Rotas de conta da titular (/api/auth/*): status, configuração, login, logout e redefinição de senha. Encaminha para lib/salon-auth.mjs com o D1. */
 import { env } from 'cloudflare:workers';
 import { handleAuth } from '../../../../lib/salon-auth.mjs';
 export const dynamic='force-dynamic';
