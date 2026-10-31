@@ -1,4 +1,4 @@
-/** APIs de atendimento exigem identidade; só o webhook assinado aceita acesso do provedor. */
+/** APIs de atendimento exigem a sessão da titular. Exceções (isWebhookPath): webhook assinado da Meta e rotas do conector Baileys, autenticadas pela chave do conector. */
 import { env } from 'cloudflare:workers';
 import { handleWhatsApp, isWebhookPath } from '../../../../lib/whatsapp-handler.mjs';
 import { authorizeRequest } from '../../../../lib/salon-auth.mjs';

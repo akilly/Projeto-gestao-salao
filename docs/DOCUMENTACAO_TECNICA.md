@@ -212,7 +212,7 @@ Validação desta revisão: 43 testes de domínio, API, histórico, pendências 
 
 Indicadores de saldo abrem todas as pendências correspondentes; indicadores de recebimentos e despesas pagas aplicam o período financeiro. Resultado de caixa abre entradas e saídas pagas. Consumo abre movimentos vinculados às fichas. Receita continua sendo contada uma vez por visita/conjunto, e frequência uma vez por serviço na visita, sem rateio inventado.
 
-Referências de comportamento e visual: `UX-CONTRACT.md` e `DESIGN.md`, com verificação em `docs/VERIFICACAO_PROCEDIMENTOS.md`.
+Referências de comportamento e visual: `UX-CONTRACT.md` e `DESIGN.md`.
 
 
 ## Cadastro de cliente no agendamento
@@ -221,18 +221,18 @@ Referências de comportamento e visual: `UX-CONTRACT.md` e `DESIGN.md`, com veri
 
 O formulário usa um único diálogo e alterna seções com `hidden` e `disabled`. Campos digitados permanecem no DOM ao trocar entre cliente novo e existente. Validadores ignoram controles desabilitados; as regras de contato são reutilizadas no cadastro completo. Um telefone coincidente oferece associação explícita, sem fusão automática. Para números brasileiros de 12/13 dígitos começados em 55, a comparação remove somente o DDI; o número informado é preservado no registro.
 
-`validateAppointment` delega ao mesmo `validateBookingSlot` usado na criação, preservando expediente, folgas e conflito com intervalo. Bloqueios continuam sem cliente. A evidência e os limites da entrega estão em `docs/VERIFICACAO_CADASTRO_AGENDA.md`; a pesquisa do WhatsApp em `docs/INTEGRACAO_WHATSAPP.md` não representa uma integração ativada.
+`validateAppointment` delega ao mesmo `validateBookingSlot` usado na criação, preservando expediente, folgas e conflito com intervalo. Bloqueios continuam sem cliente.
 
 
-## Canal WhatsApp direto com a Meta
+## Canal WhatsApp
 
-`lib/whatsapp-handler.mjs` implementa rotas autenticadas de configuração, caixa, envio e mídia, além do webhook HMAC público. `lib/whatsapp-domain.mjs` concentra criptografia, assinatura, janela, identidade e validação de mídia; `lib/meta-cloud.mjs` implementa o transporte direto, assinatura e normalização Meta. `lib/ycloud.mjs` conserva conexões legadas. `public/whatsapp.js` preserva rascunhos por conversa e usa os primitivos de interface compartilhados. As quatro tabelas D1 do canal são independentes do snapshot financeiro. Consulte `INTEGRACAO_WHATSAPP.md` para contrato, ativação, limites, segurança e referências. Nenhum segredo do provedor foi cadastrado e não houve teste com mensagens reais nesta entrega.
+`lib/whatsapp-handler.mjs` implementa as rotas autenticadas de conexão, caixa, envio e mídia, a sincronização pública do conector Baileys (autenticada pela chave do conector) e o webhook HMAC da Meta. `lib/whatsapp-domain.mjs` concentra cifragem, janela, identidade e validação de mídia; `lib/meta-cloud.mjs` implementa o transporte oficial da Meta. `public/whatsapp.js` preserva rascunhos por conversa e usa os primitivos de interface compartilhados. As tabelas `wa_*` do canal são independentes do snapshot financeiro.
 
-A migração 0002 adiciona o provedor e os marcos verificáveis de recebimento. A caixa só declara a conexão Meta pronta após mensagem real assinada, com número/WABA correspondentes. Credenciais e aceite de inscrição não substituem esse marco. A conta Meta e as condições de gratuidade permanecem sob validação da titular.
+Provedor na tela: **Baileys** em modo "o conector chama o site". O processo Node em `services/baileys` roda no computador do ateliê e sincroniza por `POST /api/whatsapp/bridge/sync` (Bearer com a chave do conector), sem porta, túnel ou domínio. A migração 0004 cria `wa_bridge` (hash da chave, estado e comando pendente) e `wa_outbox` (fila de envio). Anexos ficam no Workers KV (`MEDIA`). Rotas, estados e limites: `INTEGRACAO_BAILEYS.md`.
 
-## Atualização de 24/10/2026
+A API oficial da Meta continua no servidor, testada, sem botão na tela atual (`INTEGRACAO_WHATSAPP.md`). A migração 0002 adicionou o provedor e os marcos verificáveis de recebimento da Meta. O adaptador YCloud foi removido em 30/10/2026.
 
-O adaptador Baileys reutiliza wa_connections/threads/messages/events, sem nova tabela na D1. phone_id guarda a origem HTTPS do conector quando provider=baileys; api_key e webhook_secret guardam a chave cifrada. A sessão Node e seu journal SQLite são externos ao Worker. O conector encontra-se no repositório em services/baileys, com instalação independente e lockfile. O canal Baileys passa por assinatura HMAC e pelas regras existentes de isolamento/deduplicação. APIs antigas permanecem para compatibilidade de histórico; a interface orienta Baileys. Ver `INTEGRACAO_BAILEYS.md`.
+## Exclusões
 
 public/deletion.js centraliza bloqueios e preparação de exclusão. domain.validateState aplica os mesmos bloqueios à versão anterior, inclusive em POST direto na API. A exclusão usa CAS, fila, auditoria e recuperação existentes. O POST comum mantém a imutabilidade; o DELETE confirmado aplica a cascata validada. Ver `EXCLUSAO_REGISTROS.md`.
 
@@ -247,4 +247,3 @@ Os adaptadores de estado e WhatsApp resolvem a sessão no servidor antes de cham
 
 Mensagens apagadas são redigidas (body vazio, media e error nulos, type=deleted) e não aparecem nas consultas. IDs de transporte e tentativas são preservados para idempotência. Excluir uma conversa remove o contato local e limpa o conteúdo de suas mensagens; não é um revoke no WhatsApp e não apaga mídia física do conector. Envios sending/uncertain exigem conferência antes da remoção. Os registros técnicos de auditoria persistem; excluir a entrada visível do histórico não é purga completa de backups ou metadados.
 
-Baileys em modo "o conector chama o site": o processo Node no computador do ateliê sincroniza por `POST /api/whatsapp/bridge/sync` (Bearer com a chave do conector), sem porta, túnel ou domínio. Rotas, tabelas e limites: `docs/INTEGRACAO_BAILEYS.md`.

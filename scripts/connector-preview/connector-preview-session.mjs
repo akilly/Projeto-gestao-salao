@@ -1,3 +1,4 @@
+/** Infraestrutura do modelo de projeto (Sites): sessão local da prévia de conectores. Não contém regra do ateliê. */
 import { randomUUID } from "node:crypto";
 import {
   mkdir,

@@ -34,8 +34,8 @@ async function setup() {
 }
 
 test('rotas do conector são públicas só nos caminhos exatos', () => {
-  for (const ok of ['/api/whatsapp/bridge/sync', '/api/whatsapp/bridge/media/abcdefghijklmnop1234', '/api/whatsapp/bridge/outbox/abcdefghijklmnop1234', '/api/whatsapp/webhook/x', '/api/whatsapp/meta-webhook/x']) assert.ok(isWebhookPath(ok), ok);
-  for (const no of ['/api/whatsapp/bridge', '/api/whatsapp/bridge/sync/x', '/api/whatsapp/bridge/media/../../x', '/api/whatsapp/connection', '/api/whatsapp/baileys-webhook/x']) assert.ok(!isWebhookPath(no), no);
+  for (const ok of ['/api/whatsapp/bridge/sync', '/api/whatsapp/bridge/media/abcdefghijklmnop1234', '/api/whatsapp/bridge/outbox/abcdefghijklmnop1234', '/api/whatsapp/meta-webhook/x']) assert.ok(isWebhookPath(ok), ok);
+  for (const no of ['/api/whatsapp/bridge', '/api/whatsapp/bridge/sync/x', '/api/whatsapp/bridge/media/../../x', '/api/whatsapp/connection', '/api/whatsapp/baileys-webhook/x', '/api/whatsapp/webhook/x']) assert.ok(!isWebhookPath(no), no);
 });
 
 test('chave guardada só cifrada/hash; chave desconhecida é recusada; QR aparece só para a dona', async () => {
