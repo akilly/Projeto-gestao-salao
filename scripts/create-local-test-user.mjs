@@ -51,9 +51,9 @@ run(['d1', 'migrations', 'apply', 'DB', '--local', '--config', configPath, '--pe
 const quote = value => `'${String(value).replaceAll("'", "''")}'`;
 const salt = randomBytes(24).toString('hex');
 const hash = await derive(password, salt);
-writeFileSync(sqlPath, `INSERT INTO salon_credentials (id, owner_id, email, salt, password_hash)
-VALUES (1, ${quote(owner)}, ${quote(email.toLowerCase())}, ${quote(salt)}, ${quote(hash)})
-ON CONFLICT(id) DO UPDATE SET owner_id=excluded.owner_id, email=excluded.email, salt=excluded.salt, password_hash=excluded.password_hash;
+writeFileSync(sqlPath, `INSERT INTO salon_users (owner_id, email, salt, password_hash, role, disabled, created_at)
+VALUES (${quote(owner)}, ${quote(email.toLowerCase())}, ${quote(salt)}, ${quote(hash)}, 'admin', 0, ${Date.now()})
+ON CONFLICT(owner_id) DO UPDATE SET email=excluded.email, salt=excluded.salt, password_hash=excluded.password_hash, disabled=0;
 DELETE FROM salon_sessions;
 DELETE FROM salon_login_limits;
 `);

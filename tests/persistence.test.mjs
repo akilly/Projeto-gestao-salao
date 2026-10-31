@@ -2,15 +2,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { handleStateRequest } from '../lib/state-handler.mjs';
 import { ensureSpaceExpense } from '../public/routine.js';
 import { localDate } from '../public/core.js';
 import { blankState, retainDeposit, metrics } from '../public/domain.js';
 import { derive } from '../lib/salon-auth.mjs';
 const PASSWORD = 'senha-da-titular-123';
-async function owner(db) { db.sqlite.prepare('INSERT INTO salon_credentials (id,owner_id,email,salt,password_hash) VALUES (1,?,?,?,?)').run('o', 'hanne@teste.com', 'sal', await derive(PASSWORD, 'sal')); }
-function database() { const sqlite = new DatabaseSync(':memory:'); sqlite.exec(readFileSync(new URL('../drizzle/0000_big_elektra.sql', import.meta.url), 'utf8').replaceAll('--> statement-breakpoint', '')); sqlite.exec(readFileSync(new URL('../drizzle/0003_salon_login.sql', import.meta.url), 'utf8').replaceAll('--> statement-breakpoint', '')); return { sqlite, prepare(sql) { return { async first() { return sqlite.prepare(sql).get(); }, bind(...args) { return { async first() { return sqlite.prepare(sql).get(...args); }, async run() { return { meta: { changes: Number(sqlite.prepare(sql).run(...args).changes) } }; }, sql, args }; } }; }, async batch(statements) { sqlite.exec('BEGIN IMMEDIATE'); try {
+// Cada salão confere a exclusão com a própria senha: cria as contas usadas pelos testes com a mesma senha.
+async function owner(db) { const hash = await derive(PASSWORD, 'sal'); for (const id of ['o', 'owner', 'erase-owner', 'pw-owner']) db.sqlite.prepare("INSERT INTO salon_users (owner_id,email,salt,password_hash,role) VALUES (?,?,?,?,'admin')").run(id, id + '@teste.com', 'sal', hash); }
+function database() { const sqlite = new DatabaseSync(':memory:'); for (const f of readdirSync(new URL('../drizzle/', import.meta.url)).filter(x => x.endsWith('.sql')).sort()) sqlite.exec(readFileSync(new URL('../drizzle/' + f, import.meta.url), 'utf8').replaceAll('--> statement-breakpoint', '')); return { sqlite, prepare(sql) { return { async first() { return sqlite.prepare(sql).get(); }, bind(...args) { return { async first() { return sqlite.prepare(sql).get(...args); }, async run() { return { meta: { changes: Number(sqlite.prepare(sql).run(...args).changes) } }; }, sql, args }; } }; }, async batch(statements) { sqlite.exec('BEGIN IMMEDIATE'); try {
         const out = statements.map(s => ({ meta: { changes: Number(sqlite.prepare(s.sql).run(...s.args).changes) } }));
         sqlite.exec('COMMIT');
         return out;

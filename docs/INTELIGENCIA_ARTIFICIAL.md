@@ -19,7 +19,7 @@ A IA recebe o histórico da conversa (até 20 mensagens) e um pouco de contexto 
 - Modelos:
   - classificação: Llama 3.1 8B, rápido e barato;
   - resumo e resposta: Llama 3.3 70B, melhor em português.
-- **Limite do próprio sistema por dia**: 150 classificações, 30 resumos e 30 sugestões de resposta. Isso cabe na cota gratuita.
+- **Limite do próprio sistema por dia, para cada salão**: 150 classificações, 30 resumos e 30 sugestões de resposta. Para um salão isso cabe na cota gratuita. A cota gratuita da Cloudflare é uma só para a conta inteira: com vários salões usando muito, ela pode acabar antes e a IA para até as 21h (Brasília).
 - Se a cota acabar, a IA para até o dia seguinte e o resto do sistema continua normal. **Configurações → Inteligência artificial** mostra o uso de hoje.
 
 ## Como ligar

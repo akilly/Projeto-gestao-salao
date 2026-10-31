@@ -19,7 +19,7 @@ O que cada arquivo versionado faz. Cada módulo também tem um comentário de ca
 | Arquivo | Papel |
 |---|---|
 | `lib/state-handler.mjs` | Persistência do estado no D1 com revisão otimista, auditoria, base de demonstração isolada e exclusão por plano confirmado |
-| `lib/salon-auth.mjs` | Conta única: PBKDF2, sessões opacas, limite de tentativas, links de acesso por e-mail, confirmação de senha para exclusões |
+| `lib/salon-auth.mjs` | Contas dos salões (titular + convidados): PBKDF2, sessões opacas, limite de tentativas, links por e-mail (primeiro acesso, nova senha, convite, troca de e-mail), confirmação de senha para exclusões |
 | `lib/ai.mjs` | IA (Workers AI): prompts, validação das respostas, limite diário e rota |
 | `lib/mailer.mjs` | Envio de e-mails pelo Brevo e modelo do e-mail de acesso |
 | `lib/security-headers.mjs` | Cabeçalhos de segurança das páginas (CSP, anti-iframe, Referrer-Policy, HSTS) |
