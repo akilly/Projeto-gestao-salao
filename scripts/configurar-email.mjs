@@ -22,8 +22,13 @@ const current = Object.fromEntries((existsSync(varsFile) ? readFileSync(varsFile
 const rl = createInterface({ input: process.stdin, output: process.stdout });
 let muted = false;
 rl._writeToOutput = text => { if (!muted || /\n/.test(text)) process.stdout.write(muted ? '\n' : text); };
-const ask = (question, fallback = '') => new Promise(resolve => rl.question(question + (fallback ? ` [${fallback}]` : '') + ': ', answer => resolve(answer.trim() || fallback)));
-const askSecret = question => new Promise(resolve => { process.stdout.write(question + ' (não aparece na tela): '); muted = true; rl.question('', answer => { muted = false; resolve(answer.trim()); }); });
+// Fila de linhas: funciona digitando no terminal e também com respostas coladas/encadeadas de uma vez.
+const lines = []; let waiting = null, closed = false;
+rl.on('line', line => { if (waiting) { const resolve = waiting; waiting = null; resolve(line); } else lines.push(line); });
+rl.on('close', () => { closed = true; if (waiting) waiting(''); });
+const nextLine = () => lines.length ? Promise.resolve(lines.shift()) : closed ? Promise.resolve('') : new Promise(resolve => { waiting = resolve; });
+const ask = async (question, fallback = '') => { process.stdout.write(question + (fallback ? ` [${fallback}]` : '') + ': '); const answer = (await nextLine()).trim(); if (closed && !answer && !fallback) throw Error('entrada encerrada antes do fim.'); return answer || fallback; };
+const askSecret = async question => { process.stdout.write(question + ' (não aparece na tela): '); muted = true; const answer = await nextLine(); muted = false; return answer.trim(); };
 const brevo = (key, endpoint) => fetch('https://api.brevo.com/v3/' + endpoint, { headers: { 'api-key': key, Accept: 'application/json' }, signal: AbortSignal.timeout(10000) });
 
 console.log(`
@@ -78,6 +83,7 @@ try {
     console.log('\nPronto: configuração salva em .dev.vars. Feche e abra o INICIAR-HANNE.cmd para valer.');
   }
 } catch (failure) {
+  if (failure.message === 'fetch failed' || failure.name === 'TimeoutError') failure.message = 'não consegui falar com o Brevo. Confira a internet e tente de novo.';
   console.error('\nNão foi possível configurar: ' + (failure.message === 'mail_rejected_400' || failure.message === 'mail_rejected_403' ? 'o Brevo recusou o envio. Confira se o remetente está confirmado e se a conta está ativa.' : failure.message));
   process.exitCode = 1;
 } finally {
