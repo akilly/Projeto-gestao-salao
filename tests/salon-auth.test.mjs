@@ -21,19 +21,19 @@ test('somente o caminho exato de webhook dispensa a sessão',()=>{assert.equal(i
 /* ---------- Links por e-mail (Brevo simulado) ---------- */
 const mailEnv={BREVO_API_KEY:'xkeysib-teste-0123456789abcdef',MAIL_FROM:'ateliê@exemplo.com'.replace('ê','e'),OWNER_EMAIL:'Hanne@Example.com',APP_ORIGIN:'https://hanne.test'};
 function brevo(status=201){const sent=[];return {sent,fetcher:async(url,options)=>{assert.equal(url,'https://api.brevo.com/v3/smtp/email');assert.equal(options.headers['api-key'],mailEnv.BREVO_API_KEY);sent.push(JSON.parse(options.body));return new Response('{}',{status});}};}
-const linkOf=mail=>/acesso=([a-f0-9]{64})/.exec(mail.textContent)[1];
+const linkOf=mail=>/acesso=([a-f0-9]{64})/.exec(mail.htmlContent)[1];
 test('primeiro acesso por e-mail: só o e-mail da titular recebe, resposta igual para qualquer e-mail',async()=>{const db=database(),b=brevo();
   const status=await (await handleAuth(new Request(origin+'/api/auth/status'),db,mailEnv)).json();assert.equal(status.emailSetup,true);
   const other=await handleAuth(req('request-link',{email:'outra@exemplo.com',purpose:'setup'}),db,mailEnv,b.fetcher),own=await handleAuth(req('request-link',{email:'hanne@example.com',purpose:'setup'}),db,mailEnv,b.fetcher);
   assert.equal(other.status,200);assert.deepEqual(await other.json(),await own.json());assert.equal(b.sent.length,1);assert.equal(b.sent[0].to[0].email,'hanne@example.com');assert.match(b.sent[0].htmlContent,/https:\/\/hanne\.test\/login\?acesso=/);
-  assert.equal(db.sql.prepare('SELECT token_hash FROM salon_tokens').get().token_hash.length,64,'guarda só o hash');assert.equal(b.sent[0].textContent.includes(db.sql.prepare('SELECT token_hash FROM salon_tokens').get().token_hash),false);
+  assert.equal(db.sql.prepare('SELECT token_hash FROM salon_tokens').get().token_hash.length,64,'guarda só o hash');assert.equal(b.sent[0].htmlContent.includes(db.sql.prepare('SELECT token_hash FROM salon_tokens').get().token_hash),false);assert.equal(b.sent[0].textContent,undefined,'um único tipo de corpo');
   const token=linkOf(b.sent[0]);assert.equal((await handleAuth(req('complete',{token,password:'curta'}),db,mailEnv)).status,400);
   const done=await handleAuth(req('complete',{token,password:'senha-nova-segura-1'}),db,mailEnv);assert.equal(done.status,200);assert.match(done.headers.get('set-cookie'),/HttpOnly; Secure; SameSite=Strict/);
   assert.equal((await handleAuth(req('complete',{token,password:'senha-nova-segura-2'}),db,mailEnv)).status,410,'link de uso único');
   assert.equal((await handleAuth(req('login',{email:'hanne@example.com',password:'senha-nova-segura-1'}),db,mailEnv)).status,200);
   assert.equal((await handleAuth(req('request-link',{email:'hanne@example.com',purpose:'setup'}),db,mailEnv,b.fetcher)).status,200);assert.equal(b.sent.length,1,'com conta criada, não envia link de primeiro acesso');});
 test('esqueci a senha: link de 30 min, só o mais recente vale e encerra as sessões',async()=>{const db=database(),b=brevo();const first=await handleAuth(req('setup',withCode),db,env);const cookie=first.headers.get('set-cookie').split(';')[0];
-  await handleAuth(req('request-link',{email:'HANNE@example.com ',purpose:'reset'}),db,mailEnv,b.fetcher);assert.equal(b.sent.length,1);assert.match(b.sent[0].textContent,/30 minutos/);
+  await handleAuth(req('request-link',{email:'HANNE@example.com ',purpose:'reset'}),db,mailEnv,b.fetcher);assert.equal(b.sent.length,1);assert.match(b.sent[0].htmlContent,/30 minutos/);
   await handleAuth(req('request-link',{email:'hanne@example.com',purpose:'reset'}),db,mailEnv,b.fetcher);assert.equal(b.sent.length,1,'no máximo um e-mail por minuto');
   db.sql.prepare('UPDATE salon_tokens SET created_at=created_at-120000').run();await handleAuth(req('request-link',{email:'hanne@example.com',purpose:'reset'}),db,mailEnv,b.fetcher);assert.equal(b.sent.length,2);
   assert.equal((await handleAuth(req('complete',{token:linkOf(b.sent[0]),password:'outra-senha-segura-1'}),db,mailEnv)).status,410,'link antigo deixa de valer');
@@ -45,4 +45,4 @@ test('link expirado, Brevo fora do ar, sem configuração e limite de pedidos',a
   assert.equal((await handleAuth(req('request-link',{email:'hanne@example.com',purpose:'reset'}),db,env)).status,503);
   const limited=database();let last;for(let i=0;i<6;i++)last=await handleAuth(req('request-link',{email:'x'+i+'@exemplo.com',purpose:'reset'}),limited,mailEnv,brevo().fetcher);assert.equal(last.status,429);
   assert.equal((await handleAuth(req('complete',{token:'../../x',password:'outra-senha-segura-1'}),db,mailEnv)).status,400);assert.equal((await handleAuth(req('request-link',{email:'hanne@example.com',purpose:'reset'},{Origin:'https://evil.test'}),db,mailEnv)).status,403);});
-test('APP_ORIGIN inválido cai na origem da requisição; e-mail escapa o link',async()=>{const db=database(),b=brevo();await handleAuth(req('request-link',{email:'hanne@example.com',purpose:'setup'}),db,{...mailEnv,APP_ORIGIN:'http://evil.test'},b.fetcher);assert.match(b.sent[0].textContent,/^.*https:\/\/hanne\.test\/login\?acesso=/m);});
+test('APP_ORIGIN inválido cai na origem da requisição; e-mail escapa o link',async()=>{const db=database(),b=brevo();await handleAuth(req('request-link',{email:'hanne@example.com',purpose:'setup'}),db,{...mailEnv,APP_ORIGIN:'http://evil.test'},b.fetcher);assert.match(b.sent[0].htmlContent,/https:\/\/hanne\.test\/login\?acesso=/);});
