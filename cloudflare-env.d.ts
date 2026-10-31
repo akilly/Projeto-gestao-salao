@@ -6,6 +6,8 @@ declare namespace Cloudflare {
     WHATSAPP_ENCRYPTION_KEY?: string;
     /** Anexos do WhatsApp (Baileys): recebidos e a enviar, com expiração. */
     MEDIA?: KVNamespace;
+    /** Workers AI: classificação, resumo e sugestão de resposta (lib/ai.mjs). */
+    AI?: Ai;
     /** Código do primeiro acesso/recuperação sem e-mail (mínimo 16 caracteres). */
     SETUP_TOKEN?: string;
     /** E-mails pelo Brevo: chave de API, remetente confirmado e nome exibido. */

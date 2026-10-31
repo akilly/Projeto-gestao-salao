@@ -2,7 +2,9 @@
  * Atualização automática altera lista/histórico sem substituir o campo de resposta.
  */
 export function createWhatsAppUI(helpers) {
-  const { esc,btn,field,openForm,modal,closeModal,toast,validate,isExample,confirmLeaving,onPending }=helpers;
+  const { esc,btn,field,openForm,modal,closeModal,toast,validate,isExample,confirmLeaving,onPending,aiRun,aiContext,categoryColor }=helpers;
+  // IA por conversa: resumo em memória e qual tarefa está rodando (nada é enviado sem clicar em Enviar).
+  const aiState=new Map();
   let root=null,timer=null,controller=null,generation=0,loading=false,error='',connection=null,sessionExpired=false;
   let threads=[],pending=null,threadCursor=null,selected='',filter='open',mobileThread=false,older=null;
   const messages=new Map(),drafts=new Map(),cursors=new Map();
@@ -51,7 +53,7 @@ export function createWhatsAppUI(helpers) {
     root.querySelector('#wa-pending').textContent=pending===null?'Pendências a conferir':`${pending} ${pending===1?'conversa pendente':'conversas pendentes'}`;
     root.querySelectorAll('[data-action="wa-filter"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter===filter)));
     const list=threads.filter(t=>filter==='all'||!t.resolved);
-    const listHTML=list.map(t=>`<button type="button" class="wa-contact ${selected===t.id?'active':''}" data-action="wa-select" data-id="${esc(t.id)}" ${selected===t.id?'aria-current="true"':''}><span class="wa-avatar" aria-hidden="true">${esc(t.name.slice(0,1).toUpperCase())}</span><span class="grow"><strong>${esc(t.name)}</strong><small>${esc(t.peer)}</small><small>${date(t.last_at)} · ${t.resolved?'Resolvida':'Pendente'}</small></span></button>`).join('')||`<p class="wa-list-empty">${loading?'Carregando conversas…':error?'Não foi possível atualizar. Use Atualizar para conferir.':filter==='open'?'Nenhuma pendência entre as conversas carregadas.':'Nenhuma conversa recebida ainda.'}</p>`;
+    const listHTML=list.map(t=>`<button type="button" class="wa-contact ${selected===t.id?'active':''}" data-action="wa-select" data-id="${esc(t.id)}" ${selected===t.id?'aria-current="true"':''}><span class="wa-avatar" aria-hidden="true">${esc(t.name.slice(0,1).toUpperCase())}</span><span class="grow"><strong>${esc(t.name)}</strong>${t.ai_category&&!t.resolved?`<span class="pill ${categoryColor?.(t.ai_category)||'gray'} wa-ai-tag" title="Classificação sugerida pela IA${t.ai_reason?': '+esc(t.ai_reason):''}">${esc(t.ai_category)}${t.ai_priority==='alta'?' · alta':''}</span>`:''}<small>${esc(t.peer)}</small><small>${date(t.last_at)} · ${t.resolved?'Resolvida':'Pendente'}</small></span></button>`).join('')||`<p class="wa-list-empty">${loading?'Carregando conversas…':error?'Não foi possível atualizar. Use Atualizar para conferir.':filter==='open'?'Nenhuma pendência entre as conversas carregadas.':'Nenhuma conversa recebida ainda.'}</p>`;
     if(root.querySelector('#wa-contacts').dataset.content!==listHTML){root.querySelector('#wa-contacts').innerHTML=listHTML;root.querySelector('#wa-contacts').dataset.content=listHTML;}
     setHTML(root.querySelector('#wa-more-threads'),threadCursor?action('Carregar mais conversas','more-threads') : '');
     root.querySelector('.wa-inbox').classList.toggle('wa-mobile-thread',mobileThread);
@@ -62,9 +64,11 @@ export function createWhatsAppUI(helpers) {
       return;
     }
     let panel=root.querySelector('#wa-thread');
-    if(panel.dataset.thread!==selected){panel.dataset.thread=selected;panel.innerHTML=`<header class="wa-thread-head"><div class="row gap8">${action('Voltar','back','text')}<div class="grow"><h3>${esc(t.name)}</h3><p class="small muted">${esc(t.peer)}</p></div><span id="wa-resolve"></span></div><p id="wa-window" class="small"></p></header><div id="wa-log" class="wa-log" role="log" aria-label="Mensagens da conversa" aria-live="polite"><div id="wa-older"></div><div id="wa-messages"></div></div><form novalidate data-form="wa-send" class="wa-composer"><label class="field"><span>Responder pelo WhatsApp</span><textarea class="resize-none" name="text" maxlength="4096" rows="3" placeholder="Escreva sua resposta…" aria-describedby="wa-compose-error"></textarea></label><div class="wa-attachments"><label class="btn secondary sm">Anexar imagem<input name="image" type="file" accept="image/jpeg,image/png" class="wa-file"></label><label class="btn secondary sm">Anexar áudio<input name="audio" type="file" accept="audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,audio/m4a,audio/aac,audio/x-aac,audio/amr,audio/ogg" class="wa-file"></label><span class="small muted">JPEG/PNG até 5 MB · áudio até 16 MB</span></div><div id="wa-file-preview"></div><div id="wa-compose-error" role="alert" class="small"></div><div class="row between gap8"><span id="wa-send-state" class="small muted"></span><button type="submit" class="btn primary wa-send-button">Enviar mensagem</button></div></form>`;panel.querySelector('textarea').value=draft().text;}
+    if(panel.dataset.thread!==selected){panel.dataset.thread=selected;panel.innerHTML=`<header class="wa-thread-head"><div class="row gap8">${action('Voltar','back','text')}<div class="grow"><h3>${esc(t.name)}</h3><p class="small muted">${esc(t.peer)}</p></div><span id="wa-resolve"></span></div><p id="wa-window" class="small"></p></header><div id="wa-ai" class="wa-ai"></div><div id="wa-log" class="wa-log" role="log" aria-label="Mensagens da conversa" aria-live="polite"><div id="wa-older"></div><div id="wa-messages"></div></div><form novalidate data-form="wa-send" class="wa-composer"><label class="field"><span>Responder pelo WhatsApp</span><textarea class="resize-none" name="text" maxlength="4096" rows="3" placeholder="Escreva sua resposta…" aria-describedby="wa-compose-error"></textarea></label><div class="wa-attachments"><label class="btn secondary sm">Anexar imagem<input name="image" type="file" accept="image/jpeg,image/png" class="wa-file"></label><label class="btn secondary sm">Anexar áudio<input name="audio" type="file" accept="audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,audio/m4a,audio/aac,audio/x-aac,audio/amr,audio/ogg" class="wa-file"></label><span class="small muted">JPEG/PNG até 5 MB · áudio até 16 MB</span></div><div id="wa-file-preview"></div><div id="wa-compose-error" role="alert" class="small"></div><div class="row between gap8"><span id="wa-send-state" class="small muted"></span><button type="submit" class="btn primary wa-send-button">Enviar mensagem</button></div></form>`;panel.querySelector('textarea').value=draft().text;}
     const d=draft(),open=connection?.connected&&(connection.provider==='baileys'||t.last_inbound&&Date.now()-Date.parse(t.last_inbound)<86400000);
     setHTML(panel.querySelector('#wa-resolve'),action(t.resolved?'Reabrir':'Resolver','resolve','secondary sm',`data-resolved="${!t.resolved}"`)+action('Excluir conversa','erase-thread','danger sm',`data-id="${t.id}"`));
+    const ai=aiState.get(selected)||{};
+    setHTML(panel.querySelector('#wa-ai'),`<div class="row wrap gap8 wa-ai-actions">${t.ai_category?`<span class="pill ${categoryColor?.(t.ai_category)||'gray'}" title="${esc(t.ai_reason||'')}">IA: ${esc(t.ai_category)} · prioridade ${esc(t.ai_priority||'normal')}</span>`:''}${action(ai.busy==='summary'?'Resumindo…':ai.summary?'Atualizar resumo':'Resumir com IA','ai-summary','secondary sm',ai.busy?'disabled':'')}${action(ai.busy==='reply'?'Escrevendo…':'Sugerir resposta','ai-reply','secondary sm',ai.busy?'disabled':'')}</div>${t.ai_reason&&!ai.summary?`<p class="small muted">${esc(t.ai_reason)}</p>`:''}${ai.summary?`<p class="wa-ai-summary"><strong>Resumo da IA:</strong> ${esc(ai.summary)}</p>`:''}${ai.error?`<p class="small" role="alert" style="color:var(--red)">${esc(ai.error)}</p>`:''}`);
     panel.querySelector('#wa-window').textContent=!connection?.connected?'Reconecte o WhatsApp para responder pelo sistema.':connection.provider==='baileys'?'Você pode responder enquanto o conector estiver conectado.':open?'Pode responder até '+date(new Date(Date.parse(t.last_inbound)+86400000).toISOString())+'.':'Prazo encerrado. Aguarde uma nova mensagem ou responda no WhatsApp Business.';
     setHTML(panel.querySelector('#wa-older'),older?action('Carregar mensagens anteriores','older','text'):'');
     const target=panel.querySelector('#wa-messages'),log=panel.querySelector('#wa-log'),bottom=log.scrollHeight-log.scrollTop-log.clientHeight<90;
@@ -108,6 +112,21 @@ export function createWhatsAppUI(helpers) {
     }catch(e){op.busy=false;if(e.status&&e.status<500){d.operation=null;}form.querySelector('[role="alert"]').textContent=e.message;}finally{paint();}
   }
   /** Delegação do módulo; ações de alto impacto usam os diálogos do aplicativo. */
+  /** IA da conversa: o resumo aparece acima das mensagens; a sugestão vai para o campo de resposta para você revisar. */
+  async function runAI(task){
+    const id=selected,t=threads.find(x=>x.id===id);if(!t||!aiRun)return;
+    const state=aiState.get(id)||{};if(state.busy)return;
+    aiState.set(id,{...state,busy:task,error:''});paint();
+    const history=[...messages.values()].filter(m=>m.threadId===id).sort((a,b)=>a.at.localeCompare(b.at)||a.id.localeCompare(b.id)).map(m=>({who:m.direction==='in'?'cliente':'ateliê',text:m.body||(m.type==='image'?'[imagem]':m.type==='audio'?'[áudio]':'')}));
+    try{
+      const result=await aiRun(task,history,aiContext?.(t.peer,t.name)||{});
+      const next={...aiState.get(id),busy:''};
+      if(task==='summary')next.summary=result.summary;
+      if(task==='reply'){drafts.set(id,{...(drafts.get(id)||{text:'',file:null,preview:null,operation:null}),text:result.reply});const area=root?.querySelector('[data-form="wa-send"] textarea');if(area&&selected===id){area.value=result.reply;area.style.height='auto';area.style.height=Math.min(area.scrollHeight,220)+'px';area.focus();}toast('Sugestão da IA no campo de resposta. Revise antes de enviar.');}
+      aiState.set(id,next);
+    }catch(e){aiState.set(id,{...aiState.get(id),busy:'',error:e.message});}
+    paint();
+  }
   async function click(event) {
     const button=event.target.closest('[data-action^="wa-"]');if(!button)return;
     const name=button.dataset.action.slice(3);
@@ -118,6 +137,7 @@ export function createWhatsAppUI(helpers) {
       button.disabled=true;try{await api(button.dataset.kind+'/'+encodeURIComponent(button.dataset.id),{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({confirmed:true})});messages.clear();root?.querySelector('#wa-messages')?.replaceChildren();if(button.dataset.kind==='erase-thread'){threads=threads.filter(t=>t.id!==button.dataset.id);selected='';mobileThread=false;}closeModal(true);await refresh();toast('Conteúdo excluído do sistema.');}catch(e){error=e.message;closeModal(true);paint();}return;
     }
 
+    if(name==='ai-summary'||name==='ai-reply'){await runAI(name==='ai-summary'?'summary':'reply');return;}
     if(name==='configure')configure();
     if(name==='reveal'){const input=button.closest('.wa-secret').querySelector('input');input.type=input.type==='password'?'text':'password';button.textContent=(input.type==='password'?'Mostrar ':'Ocultar ')+(button.dataset.label||'chave');button.setAttribute('aria-pressed',String(input.type==='text'));}
     if(name==='refresh')await refresh();

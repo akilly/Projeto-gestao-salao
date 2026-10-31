@@ -168,3 +168,20 @@ test('exclusão de mensagem e conversa exige confirmação e conta certa, preser
   assert.equal((await handleWhatsApp(req('erase-thread/' + thread.id, 'DELETE', { confirmed: true }), env)).status, 200);
   assert.equal(env.DB.sqlite.prepare('SELECT count(*) n FROM wa_threads').get().n, 0);
 });
+
+test('IA classifica sozinha as conversas com mensagem nova, uma vez por mensagem, sem travar a lista', async () => {
+  const { env } = await setup();
+  const calls = [];
+  env.AI = { run: async (model, input) => { calls.push(input.messages.at(-1).content); return { response: { category: 'Agendamento urgente', priority: 'alta', reason: 'Quer horário amanhã.' } }; } };
+  await sync(env, { status: 'ready', phone: sender, events: [{ ...inbound, whatsappInboundMessage: { ...inbound.whatsappInboundMessage, text: { body: 'Tem horário amanhã cedo?' } } }] });
+  const first = await (await handleWhatsApp(req('threads'), env)).json();
+  assert.equal(first.threads[0].ai_category, 'Agendamento urgente'); assert.equal(first.threads[0].ai_priority, 'alta');
+  assert.match(calls[0], /Cliente: Tem horário amanhã cedo\?/);
+  await handleWhatsApp(req('threads'), env);
+  assert.equal(calls.length, 1, 'sem mensagem nova, não chama a IA de novo');
+  // Falha da IA não quebra a lista e não fica tentando a cada atualização.
+  env.AI = { run: async () => { throw Error('falhou'); } };
+  await sync(env, { status: 'ready', phone: sender, events: [{ ...inbound, id: 'in-2', whatsappInboundMessage: { ...inbound.whatsappInboundMessage, id: 'wa-in-2', sendTime: new Date(Date.now() + 1000).toISOString() } }] });
+  const after = await handleWhatsApp(req('threads'), env); assert.equal(after.status, 200);
+  const t = env.DB.sqlite.prepare('SELECT ai_at,last_inbound FROM wa_threads').get(); assert.equal(t.ai_at, t.last_inbound);
+});

@@ -40,6 +40,8 @@ config.topLevelName = workerName;
 config.d1_databases = [{ binding: 'DB', database_name: databaseName, database_id: databaseId, migrations_dir: '../../drizzle' }];
 if (/^[0-9a-f]{32}$/i.test(mediaKvId)) config.kv_namespaces = [{ binding: 'MEDIA', id: mediaKvId }];
 else { delete config.kv_namespaces; console.warn('\nAviso: CLOUDFLARE_KV_MEDIA_ID não definido; fotos e áudios do WhatsApp ficam desativados (só texto).'); }
+// Workers AI (classificação, resumo e sugestão de resposta). Plano gratuito: 10.000 neurons por dia.
+config.ai = { binding: 'AI' };
 delete config.dev;
 writeFileSync(configPath, JSON.stringify(config));
 console.log(`\nConfiguração pronta: Worker "${workerName}", D1 "${databaseName}" (${databaseId}).`);
