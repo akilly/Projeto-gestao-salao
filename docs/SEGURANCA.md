@@ -48,6 +48,16 @@ Escopo: código do site (rotas, autenticação, API de estado, WhatsApp/conector
   - o conteúdo das clientes vai como dado, com instrução para ignorar comandos embutidos;
   - a resposta da IA nunca é enviada nem aplicada sem a profissional.
 
+## Vários salões e troca de e-mail (adicionados depois da revisão)
+
+- **Isolamento:** cada salão tem um `owner_id`; a sessão define essa identidade no servidor e todas as consultas de dados filtram por ela. O navegador não escolhe de qual salão lê.
+- **Só a titular** (primeira conta) lista, convida, cancela convites e desativa salões. As rotas conferem o papel no servidor.
+- **Convite:** link de uso único, 7 dias, só o hash fica no banco. Sem e-mail configurado, o link aparece uma vez para a titular repassar.
+- **Desativar** apaga as sessões e os links daquele salão e bloqueia o login; os dados não são apagados.
+- **Troca de e-mail:** exige a senha atual (com limite de tentativas) e e-mail livre. Com e-mail configurado, só muda depois do link enviado ao novo endereço (24 h); o link não abre sessão. A confirmação pede um toque, então leitores automáticos de link não trocam o e-mail sozinhos.
+- **Código de configuração:** quem tem o `SETUP_TOKEN` administra a hospedagem e pode redefinir a senha de qualquer conta pelo e-mail dela. Guarde-o como uma senha mestra.
+- **Cota da IA:** contada por salão; a cota gratuita da Cloudflare é uma só para todos os salões.
+
 ## Riscos conhecidos e recomendações
 
 1. **Plano gratuito da Cloudflare (10 ms de CPU):** o PBKDF2 do login pode passar desse limite em alguns pedidos (erro 1102). Se acontecer, o plano Workers Paid resolve sem mudar o código.

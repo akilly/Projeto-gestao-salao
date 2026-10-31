@@ -6,7 +6,7 @@ Referência de manutenção da aplicação de atendimentos, finanças e estoque 
 
 O navegador recebe HTML pela rota app/route.ts, depois carrega public/app.js como módulo ES e as folhas public/style.css, public/theme.css e public/atelier.css, nesta ordem. A aplicação usa JavaScript e templates HTML com delegação de eventos. Vinext, React, Vite e Cloudflare Workers fornecem o runtime; as telas de negócio atuais usam os módulos em public.
 
-A autenticação de uso é fornecida pela conta única da Hanne em lib/salon-auth.mjs. A plataforma Sites fornece identidade apenas para configurar/recuperar a conta pela titular. A audiência do endereço é configurada separadamente no Sites e estava pública na conferência final desta revisão. Isso não compartilha automaticamente o snapshot de uma conta: a rota de negócio exige identidade, e a API usa a chave do usuário autenticado. A rota de entrada valida a sessão opaca do salão e redireciona para /login quando necessário. O primeiro acesso ainda permite à titular autenticada pela plataforma configurar sua conta. Os caminhos reservados de login, logout e callback pertencem à plataforma. A API verifica o identificador autenticado injetado no cabeçalho; o navegador não escolhe qual titular acessar.
+A autenticação é feita pelas contas de `salon_users` em lib/salon-auth.mjs. Cada conta é um salão: o `owner_id` da sessão é a chave de todos os registros (`atelier_accounts.user_id`, `wa_connections.user_id`, `ai_usage.owner_id`), então um salão nunca lê os dados de outro. A primeira conta é a titular (`role = admin`, mantém o `owner_id` histórico da base) e convida os demais salões; um salão desativado perde as sessões e não entra mais, mas os dados ficam guardados.
 
 A rota /api/state encaminha GET e POST ao handler em lib/state-handler.mjs com env.DB. O D1 guarda um agregado JSON completo por base de usuário, acompanhado por revisão. Não há backend Supabase, processamento agendado, conexão bancária automática. O canal WhatsApp foi implementado separadamente e aguarda ativação da conta Meta, conforme INTEGRACAO_WHATSAPP.md.
 
@@ -25,9 +25,9 @@ Fluxo de leitura: autenticação → GET da base selecionada → carregamento no
 | public/style.css, public/theme.css e public/atelier.css | Base visual, temas e direção visual final com cartões no celular |
 | app/route.ts | HTML inicial com autenticação e referência aos módulos públicos |
 | app/api/state/route.ts | Adaptador HTTP para o handler compartilhado |
-| app/login/route.ts e public/login.js | Tela de entrada, cadastro inicial e recuperação da conta titular |
+| app/login/route.ts e public/login.js | Tela de entrada, cadastro inicial, recuperação de senha, convite de salão e confirmação de e-mail |
 | app/layout.tsx | Estrutura de compatibilidade do App Router |
-| lib/salon-auth.mjs | Credenciais, sessão, identidade de bootstrap e autorização das APIs |
+| lib/salon-auth.mjs | Contas dos salões, sessão, convites, troca de senha/e-mail e autorização das APIs |
 | lib/state-handler.mjs | Isolamento, validação, revisão otimista, snapshot e evento D1 |
 | db/schema.ts | Esquema Drizzle usado pela geração de migrações |
 | drizzle | Migração SQL aplicada e seus metadados; histórico preservado |

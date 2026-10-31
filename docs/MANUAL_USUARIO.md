@@ -4,13 +4,30 @@ Este manual orienta a Hanne no registro de clientes, agenda, atendimentos, receb
 
 ## Acesso e escolha dos dados
 
-Abra o endereço do ateliê e entre com o e-mail e a senha da conta única da Hanne. No **primeiro acesso**, informe o e-mail da titular: chega um link para criar a senha (mínimo 12 caracteres), válido por 24 horas. **Esqueci minha senha** envia um link válido por 30 minutos e encerra as sessões abertas em outros aparelhos. Os links só podem ser usados uma vez; não encaminhe esses e-mails. Sem e-mail configurado, a tela pede o código de configuração. A sessão dura até 12 horas. Em **Configurações → Sua conta** você troca a senha (pede a atual e desconecta os outros aparelhos) e sai da conta. No celular, use a barra inferior ou o botão de menu para abrir as áreas do sistema. A pesquisa no topo ajuda a localizar registros.
+Abra o endereço do ateliê e entre com o seu e-mail e a sua senha. Cada salão tem a própria conta. No **primeiro acesso**, informe o e-mail da titular: chega um link para criar a senha (mínimo 12 caracteres), válido por 24 horas. **Esqueci minha senha** envia um link válido por 30 minutos e encerra as sessões abertas em outros aparelhos. Os links só podem ser usados uma vez; não encaminhe esses e-mails. Sem e-mail configurado, a tela pede o código de configuração. A sessão dura até 12 horas. Em **Configurações → Sua conta** você troca a senha (pede a atual e desconecta os outros aparelhos) e sai da conta. No celular, use a barra inferior ou o botão de menu para abrir as áreas do sistema. A pesquisa no topo ajuda a localizar registros.
 
 Antes de digitar, confira a faixa no alto da página. “Demonstração com dados fictícios” indica um ambiente para testar; “Você está nos dados reais” indica a operação do negócio. Use “Abrir dados reais” ou “Ver dados fictícios” para alternar. As bases são separadas e alterações nos exemplos não alimentam o financeiro real. A escolha é lembrada no navegador.
 
 Para ir diretamente à operação, acrescente /?dados=reais ao endereço. Para praticar, use /?dados=exemplo. Os exemplos podem ser editados e, depois de salvos, permanecem nessa base de teste.
 
 Após confirmar qualquer registro, aguarde a indicação de sincronização. “Salvando…” significa que a gravação ainda está em andamento. Se aparecer falha ou conflito, siga as instruções de recuperação deste manual antes de fechar a aba.
+
+## Sua conta e outros salões
+
+Em **Configurações → Sua conta**:
+
+- **Trocar senha:** pede a senha atual e a nova (mínimo 12 caracteres). Os outros aparelhos precisam entrar de novo; este continua conectado.
+- **Trocar e-mail:** pede o novo e-mail duas vezes e a senha atual. Com o envio de e-mails configurado, chega um link no novo endereço e a troca só vale depois que você abrir esse link (até lá, entre com o e-mail antigo). Sem envio de e-mails configurado, o e-mail muda na hora.
+- **Sair da conta:** encerra a sessão neste aparelho.
+
+**Outros salões (só a titular).** A primeira conta criada é a da titular. Ela vê a seção **Salões** e pode:
+
+1. Tocar em **Convidar salão** e informar o e-mail de quem vai usar.
+2. Com o envio de e-mails configurado, o convite chega por e-mail. Sem ele, aparece um link para você copiar e mandar (por WhatsApp, por exemplo). O link vale 7 dias e só pode ser usado uma vez.
+3. A pessoa abre o link, cria a senha e entra num salão **vazio**: clientes, agenda, financeiro, estoque, WhatsApp e IA são só dela. A titular não vê esses dados, e o outro salão não vê os da titular.
+4. **Desativar** bloqueia o acesso daquele salão na hora (as sessões abertas caem). Os dados ficam guardados e **Reativar** devolve o acesso. **Cancelar convite** invalida um link ainda não usado.
+
+Com o Hanne rodando no seu computador, o link de convite só abre nesse mesmo computador. Para outra pessoa usar de outro aparelho, publique o Hanne na nuvem (veja DEPLOY.md). Cada salão que quiser WhatsApp precisa do próprio conector, com o próprio número.
 
 ## Escolher o tema e navegar
 

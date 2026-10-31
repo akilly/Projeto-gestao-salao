@@ -43,11 +43,12 @@ export const waOutbox = sqliteTable('wa_outbox', {
 }, t => [primaryKey({ columns: [t.channelId, t.requestId] })]);
 
 /** Conta da profissional: derivação de senha, sessões revogáveis e limite de tentativas. */
-export const salonCredentials=sqliteTable('salon_credentials',{id:integer('id').primaryKey(),ownerId:text('owner_id').notNull(),email:text('email').notNull(),salt:text('salt').notNull(),passwordHash:text('password_hash').notNull()});
+// Uma linha por salão. role: 'admin' (titular, convida os outros) ou 'member'. disabled: acesso suspenso pela titular.
+export const salonUsers=sqliteTable('salon_users',{ownerId:text('owner_id').primaryKey(),email:text('email').notNull().unique(),salt:text('salt').notNull(),passwordHash:text('password_hash').notNull(),role:text('role').notNull().default('member'),disabled:integer('disabled').notNull().default(0),createdAt:integer('created_at').notNull().default(0)});
 export const salonSessions=sqliteTable('salon_sessions',{tokenHash:text('token_hash').primaryKey(),ownerId:text('owner_id').notNull(),expiresAt:integer('expires_at').notNull()});
 /** Links de uso único (primeiro acesso / redefinição de senha); só o hash do token é guardado. */
-export const salonTokens=sqliteTable('salon_tokens',{tokenHash:text('token_hash').primaryKey(),kind:text('kind').notNull(),email:text('email').notNull(),expiresAt:integer('expires_at').notNull(),createdAt:integer('created_at').notNull()});
+export const salonTokens=sqliteTable('salon_tokens',{tokenHash:text('token_hash').primaryKey(),kind:text('kind').notNull(),email:text('email').notNull(),ownerId:text('owner_id'),expiresAt:integer('expires_at').notNull(),createdAt:integer('created_at').notNull()});
 export const salonLoginLimits=sqliteTable('salon_login_limits',{bucket:text('bucket').primaryKey(),attempts:integer('attempts').notNull(),resetAt:integer('reset_at').notNull()});
 
 /** Contador diário de chamadas de IA por tarefa (protege a cota gratuita do Workers AI). */
-export const aiUsage = sqliteTable('ai_usage', { day: text('day').notNull(), task: text('task').notNull(), calls: integer('calls').notNull() }, t => [primaryKey({ columns: [t.day, t.task] })]);
+export const aiUsage = sqliteTable('ai_usage', { day: text('day').notNull(), ownerId: text('owner_id').notNull(), task: text('task').notNull(), calls: integer('calls').notNull() }, t => [primaryKey({ columns: [t.day, t.ownerId, t.task] })]);
