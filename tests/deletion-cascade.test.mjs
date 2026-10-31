@@ -1,3 +1,4 @@
+/** Exclusão em cascata: o plano mostra todos os vínculos e o servidor só aceita o plano confirmado. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {exampleState} from '../public/examples.js';

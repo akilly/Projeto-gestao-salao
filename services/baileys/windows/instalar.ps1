@@ -4,6 +4,7 @@
 
   Uso (PowerShell como Administrador, dentro da pasta extraída do conector):
     powershell -ExecutionPolicy Bypass -File .\windows\instalar.ps1 -Site https://hanne-atelier.SEU-USUARIO.workers.dev
+    (sistema rodando neste computador: -Site http://localhost:8787)
 
   O que faz:
     1. Confere o Node.js (22.13 ou mais novo).
@@ -31,7 +32,8 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
   throw 'Abra o PowerShell como Administrador (botão direito > Executar como administrador) e rode de novo.'
 }
 $Site = $Site.Trim().TrimEnd('/')
-if ($Site -notmatch '^https://[a-z0-9.-]+$') { throw 'Informe o endereço do ateliê assim: -Site https://hanne-atelier.SEU-USUARIO.workers.dev' }
+# HTTPS na nuvem; http://localhost só quando o ateliê roda neste mesmo computador (teste).
+if ($Site -notmatch '^(https://[a-z0-9.-]+|http://(localhost|127\.0\.0\.1)(:\d+)?)$') { throw 'Informe o endereço do ateliê assim: -Site https://hanne-atelier.SEU-USUARIO.workers.dev  (ou -Site http://localhost:8787 se o sistema roda neste computador)' }
 
 Passo 'Conferindo o Node.js'
 $node = (Get-Command node -ErrorAction SilentlyContinue).Source

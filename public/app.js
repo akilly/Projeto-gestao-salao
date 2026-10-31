@@ -182,7 +182,7 @@ function overdueRows(limit = 6) {
         ...o.bills.map(b => [b.due, destinationLink(`${icon('users')}<span class="grow">${esc(client(b.clientId).name)}<small class="table-sub">${esc(b.description)} · venceu em ${fmt(b.due)}</small></span>${pill(money(billBalance(state, b)), 'orange')}`, { page: 'finance', bill: b.id }, 'task-row attention-button')]),
         ...o.card.map(i => [i.due, destinationLink(`${icon('wallet')}<span class="grow">Repasse do cartão ${i.number}/${i.count}<small class="table-sub">Previsto para ${fmt(i.due)} · confirme o recebimento</small></span>${pill(money(i.gross), 'orange')}`, { page: 'finance', installment: i.id }, 'task-row attention-button')]),
     ].sort((a, b) => a[0].localeCompare(b[0]));
-    return rows.slice(0, limit).map(r => r[1]).join('') + (rows.length > limit ? `<p class="small muted">E mais ${plural(rows.length - limit, 'pendência', 'pendências')} no Financeiro.</p>` : '');
+    return rows.slice(0, limit).map(r => r[1]).join('') + (rows.length > limit ? `<p class="small muted attention-more">E mais ${plural(rows.length - limit, 'pendência', 'pendências')} no Financeiro.</p>` : '');
 }
 /**
  * lowStock — Produtos com saldo igual ou abaixo do mínimo configurado.

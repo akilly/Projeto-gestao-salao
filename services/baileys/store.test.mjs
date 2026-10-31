@@ -1,3 +1,4 @@
+/** Diário local do conector: envio nunca repetido, eventos até confirmação, resultados reinformados quando preciso. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { openStore } from './store.mjs';

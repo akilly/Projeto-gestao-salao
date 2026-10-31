@@ -13,13 +13,6 @@ export function deletionBlock(state, collection, id) {
   }
   return '';
 }
-export function deleteRecord(state, collection, id) {
-  const issue = deletionBlock(state, collection, id);
-  if (issue) throw Error(issue);
-  const next = structuredClone(state);
-  next[collection] = next[collection].filter(x => x.id !== id);
-  return next;
-}
 
 /** Plano explícito de exclusão em cascata; o servidor reproduz antes de gravar. */
 export const allCollections = [...removableCollections, 'records','bills','payments','installments','movements','expenses','audit'];

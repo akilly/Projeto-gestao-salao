@@ -100,9 +100,6 @@ strong {
 .small {
   font-size:12px
 }
-.serif {
-  font-family:Georgia,serif
-}
 .row {
   display:flex;
   align-items:center;
@@ -118,21 +115,11 @@ strong {
   flex:1;
   min-width:0
 }
-.stack {
-  display:flex;
-  flex-direction:column;
-  gap:16px
-}
 .gap8 {
   gap:8px
 }
 .gap6 {
   gap:6px
-}
-.divider {
-  height:1px;
-  background:var(--line);
-  margin:20px 0
 }
 .eyebrow {
   font-size:10px;
@@ -237,9 +224,6 @@ strong {
   color:var(--ink);
   min-width:19px;
   text-align:center
-}
-.nav-gap {
-  height:28px
 }
 .sidebar-bottom {
   margin-top:auto;
@@ -393,11 +377,6 @@ strong {
   position:absolute;
   top:5px;
   right:6px
-}
-.top-divider {
-  height:24px;
-  width:1px;
-  background:var(--line)
 }
 .user-avatar {
   background:var(--surface-soft);
@@ -725,89 +704,6 @@ strong {
   background:var(--surface-soft);
   color:var(--muted)
 }
-.conversation-row {
-  display:flex;
-  align-items:flex-start;
-  gap:11px;
-  padding:19px 22px;
-  border-bottom:1px solid var(--line);
-  cursor:pointer;
-  position:relative
-}
-.conversation-row:last-child {
-  border-bottom:0
-}
-.conversation-row:hover {
-  background:var(--surface)
-}
-.conversation-row.urgent {
-  background:var(--surface);
-  border-left:3px solid var(--line);
-  padding-left:19px
-}
-.conversation-row .name {
-  font-size:11px;
-  font-weight:650;
-  display:flex;
-  align-items:center;
-  gap:8px
-}
-.conversation-row .preview {
-  font-size:10px;
-  color:var(--muted);
-  line-height:1.6;
-  margin-top:6px;
-  max-width:355px;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap
-}
-.conversation-row .time {
-  font-size:9px;
-  color:var(--muted);
-  white-space:nowrap;
-  padding-top:2px
-}
-.conversation-row .arrow {
-  color:var(--muted);
-  margin-top:10px;
-  display:block
-}
-.conversation-row .arrow .icon {
-  width:14px;
-  height:14px
-}
-.unread-dot {
-  width:5px;
-  height:5px;
-  background:var(--accent);
-  border-radius:50%;
-  margin-top:13px;
-  margin-left:auto
-}
-.card-footer {
-  border-top:1px solid var(--line);
-  padding:12px 20px;
-  display:flex;
-  justify-content:center
-}
-.card-footer .btn {
-  font-size:10px
-}
-.schedule-date {
-  font-size:10px;
-  color:var(--muted);
-  display:flex;
-  align-items:center;
-  gap:5px;
-  background:var(--surface);
-  padding:6px 8px;
-  border-radius:5px
-}
-.schedule-date .icon {
-  width:12px;
-  height:12px
-}
 .day-ribbon {
   display:flex;
   gap:8px;
@@ -947,11 +843,6 @@ strong {
   text-decoration:line-through;
   color:var(--muted)
 }
-.task-row .tag {
-  margin-left:auto;
-  font-size:8px;
-  color:var(--muted)
-}
 .followup {
   padding:15px 21px;
   border-top:1px solid var(--line);
@@ -1030,7 +921,7 @@ strong {
   padding-left:36px;
   width:100%
 }
-.field-input,input:not([type=checkbox]):not([type=file]),select,textarea {
+input:not([type=checkbox]):not([type=file]),select,textarea {
   border:1px solid var(--line);
   border-radius:7px;
   padding:10px 11px;
@@ -1137,10 +1028,6 @@ label.field span:first-child {
   font-size:9px;
   color:var(--muted);
   margin-top:4px
-}
-.table-number {
-  font-variant-numeric:tabular-nums;
-  white-space:nowrap
 }
 .empty {
   padding:48px 24px;
@@ -1297,15 +1184,6 @@ label.field span:first-child {
   display:grid;
   grid-template-columns:minmax(0,1fr) 280px;
   gap:22px
-}
-.info-card {
-  padding:22px
-}
-.info-card p {
-  font-size:11px;
-  color:var(--muted);
-  line-height:1.9;
-  margin-top:10px
 }
 .calendar-toolbar {
   display:flex;
@@ -1656,25 +1534,6 @@ label.field span:first-child {
   color:var(--ink);
   margin-bottom:4px
 }
-.status-banner {
-  border:1px solid var(--line);
-  border-radius:10px;
-  padding:15px;
-  display:flex;
-  align-items:center;
-  gap:12px
-}
-.status-banner h3 {
-  font-size:12px
-}
-.status-banner p {
-  font-size:10px;
-  color:var(--muted);
-  margin-top:5px
-}
-.status-banner .icon {
-  color:var(--muted)
-}
 .photos {
   display:flex;
   flex-wrap:wrap;
@@ -1720,9 +1579,6 @@ dialog::backdrop {
 }
 dialog.wide {
   width:780px
-}
-dialog.search-dialog {
-  width:650px
 }
 dialog .dialog-head {
   display:flex;
@@ -1842,17 +1698,6 @@ dialog form {
   max-height:50vh;
   overflow:auto
 }
-.callout {
-  padding:15px;
-  border-radius:8px;
-  border:1px solid var(--line);
-  margin:14px 0;
-  line-height:1.8;
-  font-size:11px
-}
-.print-only {
-  display:none
-}
 #toast {
   position:fixed;
   bottom:25px;
@@ -1877,12 +1722,6 @@ dialog form {
 .mobile-shade {
   display:none
 }
-.weekend-label {
-  font-size:9px;
-  color:var(--muted);
-  text-align:center;
-  margin:15px
-}
 .available-list {
   display:flex;
   gap:7px;
@@ -1900,10 +1739,6 @@ dialog form {
 @media(min-width:1550px) {
   .main {
     padding-top:40px
-  }
-  .conversation-row {
-    padding-top:22px;
-    padding-bottom:22px
   }
   .schedule-row {
     padding-bottom:25px
@@ -1936,22 +1771,6 @@ dialog form {
   }
   .card-head {
     padding:18px
-  }
-  .conversation-row {
-    padding:18px
-  }
-  .conversation-row.urgent {
-    padding-left:15px
-  }
-  .conversation-row .name {
-    gap:5px
-  }
-  .conversation-row .preview {
-    max-width:235px
-  }
-  .conversation-row .pill {
-    font-size:8px;
-    padding:5px
   }
   .stat {
     padding:15px
@@ -1999,7 +1818,7 @@ dialog form {
   .brand {
     padding:0 9px 29px
   }
-  .brand>div:last-child,.nav-label,.nav button>span,.nav-count,.focus-box,.demo-label,.nav-gap {
+  .brand>div:last-child,.nav-label,.nav button>span,.nav-count,.focus-box,.demo-label {
     display:none
   }
   .nav button {
@@ -2062,9 +1881,6 @@ dialog form {
   .schedule-body .pill {
     display:none
   }
-  .conversation-row .preview {
-    max-width:200px
-  }
   .inbox {
     grid-template-columns:230px 1fr
   }
@@ -2094,9 +1910,6 @@ dialog form {
   }
   .breadcrumb {
     gap:8px
-  }
-  .top-divider {
-    display:none
   }
   .page-heading {
     align-items:flex-start;
@@ -2143,21 +1956,8 @@ dialog form {
   .dashboard-grid,.lower-grid {
     grid-template-columns:1fr
   }
-  .conversation-row .preview {
-    max-width:100%;
-    width:100%
-  }
-  .conversation-row .grow {
-    overflow:hidden
-  }
   .card-head {
     padding:20px
-  }
-  .conversation-row {
-    padding:19px 20px
-  }
-  .conversation-row.urgent {
-    padding-left:17px
   }
   .schedule-body .pill {
     display:inline-flex
@@ -2243,7 +2043,7 @@ dialog form {
   .sidebar.mobile-open {
     display:flex
   }
-  .sidebar.mobile-open .brand>div:last-child,.sidebar.mobile-open .nav-label,.sidebar.mobile-open .nav button>span,.sidebar.mobile-open .nav-count,.sidebar.mobile-open .focus-box,.sidebar.mobile-open .demo-label,.sidebar.mobile-open .nav-gap {
+  .sidebar.mobile-open .brand>div:last-child,.sidebar.mobile-open .nav-label,.sidebar.mobile-open .nav button>span,.sidebar.mobile-open .nav-count,.sidebar.mobile-open .focus-box,.sidebar.mobile-open .demo-label {
     display:revert
   }
   .sidebar.mobile-open .nav button {
@@ -2337,22 +2137,6 @@ dialog form {
   }
   .tabs button {
     font-size:10px
-  }
-  .conversation-row .name {
-    font-size:11px
-  }
-  .conversation-row .preview {
-    font-size:10px
-  }
-  .conversation-row .pill {
-    font-size:8px
-  }
-  .conversation-row {
-    padding:17px 18px;
-    gap:9px
-  }
-  .conversation-row.urgent {
-    padding-left:15px
   }
   .day-ribbon {
     padding-left:16px;
@@ -2591,11 +2375,6 @@ dialog form {
   .data-table td,.data-table th {
     padding:10px
   }
-  .print-only {
-    display:block;
-    font-size:10px;
-    margin:10px 0
-  }
   .table-wrap {
     overflow:visible
   }
@@ -2654,9 +2433,6 @@ dialog form {
 .breadcrumb,.topbar .muted {
   color:var(--muted)
 }
-.schedule-date {
-  color:var(--muted)
-}
 .card-head .sub {
   color:var(--muted);
   font-size:11px
@@ -2688,7 +2464,7 @@ dialog form {
 .field {
   font-size:12px!important
 }
-.field-input,input:not([type=checkbox]):not([type=file]),select,textarea {
+input:not([type=checkbox]):not([type=file]),select,textarea {
   min-height:41px
 }
 .topbar .pill {
