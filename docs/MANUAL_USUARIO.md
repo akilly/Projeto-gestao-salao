@@ -4,7 +4,7 @@ Este manual orienta a Hanne no registro de clientes, agenda, atendimentos, receb
 
 ## Acesso e escolha dos dados
 
-Abra https://hanne-atelier.jollysmile16.chatgpt.site e entre com o e-mail e a senha da conta única da Hanne. No primeiro acesso, a titular do projeto usa **Cadastrar usuário titular**, confirma sua identidade pela hospedagem e define essas credenciais. Não envie a senha pelo chat. **Esqueci minha senha** permite à mesma titular redefinir o acesso; isso encerra as sessões antigas. A audiência do endereço continua administrada no Sites. No celular, use o botão de menu para abrir as áreas do sistema. A pesquisa no topo ajuda a localizar registros.
+Abra o endereço publicado do ateliê (por exemplo `https://hanne-atelier.SEU-USUARIO.workers.dev`) e entre com o e-mail e a senha da conta única da Hanne. No primeiro acesso, a tela pede o **código de configuração** (definido na publicação), o e-mail e uma senha de pelo menos 12 caracteres. Não envie a senha pelo chat. **Esqueci minha senha** pede o mesmo código e encerra as sessões antigas. A sessão dura até 12 horas; para sair, use Configurações → Sair da conta. No celular, use a barra inferior ou o botão de menu para abrir as áreas do sistema. A pesquisa no topo ajuda a localizar registros.
 
 Antes de digitar, confira a faixa no alto da página. “Demonstração com dados fictícios” indica um ambiente para testar; “Você está nos dados reais” indica a operação do negócio. Use “Abrir dados reais” ou “Ver dados fictícios” para alternar. As bases são separadas e alterações nos exemplos não alimentam o financeiro real. A escolha é lembrada no navegador.
 
@@ -208,15 +208,15 @@ Selecione o mês ou todo o período para analisar o movimento. As pendências de
 
 A área “Atendimentos” organiza conversas disponíveis no sistema, com categorias e situações. Revise a conversa, faça anotações e marque como resolvida quando encerrar a pendência. Conversas em espera continuam no contador de pendentes.
 
-A aba Notas internas conserva suas anotações; copiar rascunho não envia uma mensagem. Na base real, a aba WhatsApp recebe e responde pela Meta depois de configurar o número. Toque em Conectar à Meta. Comece pelo número de teste: copie Phone number ID, WABA ID, token de acesso e Segredo do app do mesmo aplicativo Meta. Informe os valores no formulário seguro, sem enviá-los por chat. A tela distingue acesso ao número, confirmação do endereço e mensagem recebida. Se uma etapa ficar pendente, abra Não chegou mensagem? Confira estas etapas, cadastre URL/Verify token no Webhooks da Meta e assine messages. Envie uma mensagem de seu telefone autorizado ao número de teste. Este procedimento não migra o Business atual; manter o número no app e na API exige coexistência oficial elegível.
+A aba **Notas internas** conserva suas anotações. Em cada conversa e cliente, o botão **WhatsApp** abre o aplicativo com uma mensagem pronta (lembrete, confirmação, cobrança ou agradecimento) que você pode editar antes de enviar; o contexto da cliente aparece junto para você saber do que se trata.
 
-Abra uma conversa para escrever ou anexar imagem/áudio. Confira o arquivo e toque em Enviar mensagem. JPEG/PNG: até 5 MB; áudio MP3, M4A, AAC, AMR ou OGG Opus mono: até 16 MB. Áudio não tem legenda; a legenda de imagem aceita até 1.024 caracteres. Não há gravação por microfone nesta versão.
+Na base real, a aba **WhatsApp** recebe e responde mensagens dentro do sistema quando o **conector** está instalado no computador do ateliê. A instalação é feita uma vez, seguindo `WHATSAPP_NO_COMPUTADOR.md`: o instalador gera uma chave e a copia. Depois, em Atendimentos → WhatsApp → **Conectar por QR Code**, cole a chave (Ctrl+V) e leia o QR no celular em WhatsApp → Aparelhos conectados → Conectar um aparelho. Comece com um número de teste.
 
-Aceita pelo provedor ainda não significa Entregue ou Lida. Os estados são atualizados quando o provedor confirma. Se aparecer Sem confirmação, use Conferir tentativa; não envie novamente por outro lugar antes de conferir no provedor. Já conferi no provedor permite liberar o campo, com confirmação, sem cancelar uma mensagem já enviada. Falhas definitivas mantêm o rascunho para correção.
+Abra uma conversa para escrever ou anexar imagem/áudio e toque em Enviar mensagem. JPEG/PNG: até 5 MB; áudio MP3, M4A, AAC, AMR ou OGG Opus mono: até 16 MB. Áudio não tem legenda; a legenda de imagem aceita até 1.024 caracteres.
 
-O prazo para resposta livre é de 24 horas após a última mensagem da cliente. Depois, aguarde novo contato ou responda pelo aplicativo Business. Resolver organiza a caixa, sem finalizar um serviço; nova mensagem reabre a pendência. O painel e o menu somam pendências do WhatsApp e das notas. A caixa atualiza periodicamente e tem Atualizar para conferência manual.
+A mensagem aparece **Na fila do conector** até o computador enviá-la (alguns segundos, se ele estiver ligado). Depois passa a Aceita, Entregue e Lida. Se aparecer **Sem confirmação**, confira no celular antes de mandar de novo: o sistema nunca reenvia sozinho. Falhas definitivas mantêm o rascunho para correção.
 
-Rascunhos ficam na memória da aba enquanto você troca de conversa/tela. Recarregar avisa antes de perder esse conteúdo. Arquivos podem expirar no provedor; o histórico conserva os textos e estados. Desconectar interrompe o canal neste sistema e preserva as conversas salvas; não encerra o Business nem revoga as credenciais na Meta. Mais detalhes em INTEGRACAO_WHATSAPP.md.
+Resolver organiza a caixa, sem finalizar um serviço; nova mensagem reabre a pendência. O painel e o menu somam pendências do WhatsApp e das notas. Rascunhos ficam na memória enquanto você troca de conversa ou tela. **Desconectar** encerra a sessão no computador e preserva as conversas salvas. Excluir conversa ou mensagem apaga o conteúdo do sistema, não do celular da cliente.
 
 Modo de foco ajuda a reduzir a apresentação de pendências comuns; alertas de segurança continuam destacados. Ele não substitui a conferência de mensagens no canal externo.
 
@@ -266,24 +266,17 @@ Os rascunhos não salvos ficam somente na memória da aba. Evite editar a mesma 
 
 Ao começar o dia, confira a base real, a agenda e as pendências. Logo após cada visita, finalize serviços, produtos e pagamento enquanto as informações estão frescas. Ao final do dia, compare recebimentos com comprovantes e extratos e confirme somente repasses e despesas efetivos. Faça exportações periódicas e confira a lista de estoque baixo antes de comprar.
 
-O tempo necessário para o fechamento ainda deve ser testado com a Hanne. Pratique primeiro com os dados fictícios e ajuste a rotina com base na experiência real. A ativação do WhatsApp depende da conta e da conta e do número de API autorizados na Meta. Inteligência artificial, avisos externos e importação automática continuam fora desta etapa.
+O tempo necessário para o fechamento ainda deve ser testado com a Hanne. Pratique primeiro com os dados fictícios e ajuste a rotina com base na experiência real. Inteligência artificial, avisos externos e importação automática continuam fora desta etapa.
 
 
-Acesso direto não tem mensalidade de intermediário, mas as mensagens seguem as condições/cotas da Meta. Há divergência entre páginas oficiais consultadas em 20/10/2026; confirme a condição da conta antes de produção. O sistema não envia templates ou campanhas e não promete gratuidade ilimitada.
+## Excluir e corrigir registros
 
-## Atualização de 24/10/2026: QR Code e exclusão
+Abra um registro (cliente, agendamento, ficha, cobrança, pagamento, despesa, produto, tarefa, orçamento): **Editar** e **Excluir** ficam na janela de detalhes. Nas telas de gestão há também o botão **Excluir registro**, que permite buscar por nome, data ou valor. Corrigir digitação é permitido quando não desequilibra saldos ou estoque. Para excluir, confira a lista completa dos vínculos que também serão apagados, marque a confirmação e **digite a senha da conta**: assim ninguém além de você consegue apagar dados. Não há desfazer. Detalhes: `EXCLUSAO_REGISTROS.md`.
 
-Atendimentos → WhatsApp → Conectar por QR Code configura o conector Baileys. É necessário instalar primeiro o serviço Node em computador/servidor ligado, com domínio HTTPS. Informe endereço e chave no site; depois leia o código no WhatsApp Business, em Aparelhos conectados. A biblioteca é gratuita e não oficial; infraestrutura pode ter custo. Sem conector instalado o site não pode gerar o QR nem sincronizar mensagens. Passos completos: `INTEGRACAO_BAILEYS.md`.
+## Detalhes da exclusão
 
-Nas telas Clientes, Serviços, Agenda, Estoque, Tarefas, Orçamentos e Atendimentos/Notas internas, use Excluir registro. Escolha um registro, confira a lista completa dos vínculos que também serão apagados, marque a confirmação e toque em Excluir definitivamente. A opção Manter registro cancela sem apagar. Pagamentos, parcelas, fichas e movimentos também podem ser excluídos pelo fluxo confirmado. Os saldos e o estoque são recalculados; cancelar agenda ou resolver conversa não altera o financeiro. Não há desfazer exclusão permanente. Detalhes: `EXCLUSAO_REGISTROS.md`.
-
-
-## Conta, exclusões e conexão simplificada — versão 13
-
-- **Entrar:** use o e-mail e a senha definidos pela titular em /login. Não há cadastro público nem contas individuais nesta versão. A sessão dura até 12 horas. Saia em Configurações → Sair da conta.
 - **Excluir informações:** o botão Excluir registro aparece nas telas de gestão, inclusive Financeiro. É possível buscar por nome, data ou valor. A confirmação lista todas as dependências. Excluir uma parcela remove o pagamento do qual faz parte e suas outras parcelas. Excluir uma cobrança concluída remove também a ficha e seus consumos. Excluir uma entrada de produto inclui movimentos posteriores dependentes, para manter o livro de estoque coerente. Confira a lista antes de aceitar.
 - **Recomeçar:** Configurações → Excluir registro → Apagar dados da operação limpa os cadastros e a configuração operacional da base selecionada. Não elimina as credenciais nem as conversas reais de WhatsApp. Uma confirmação técnica da exclusão permanece.
-- **WhatsApp:** a instalação do servidor é feita uma vez. Depois use Gerar novo QR Code quando necessário; a chave já configurada será reutilizada. Se o operador preparar as variáveis do servidor, a tela inicial permite gerar o QR sem digitar endereço e chave.
 - **Excluir conversa/mensagem:** na conversa de WhatsApp, use Excluir conversa ou Excluir mensagem e confirme. Isso apaga o conteúdo do sistema, não do celular da cliente. IDs técnicos são conservados para impedir duplicação; anexos no conector seguem a retenção própria. Se houver envio incerto, confira sua situação antes de excluir.
 - **Despesa mensal excluída:** o mesmo mês fica marcado para não recriar automaticamente a despesa. Você ainda pode lançar uma despesa manualmente.
 

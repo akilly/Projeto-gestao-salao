@@ -1,3 +1,4 @@
+/** Prepara variáveis de ambiente locais (pastas do Wrangler, métricas desligadas) antes de rodar o Worker localmente. */
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

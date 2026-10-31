@@ -1,3 +1,4 @@
+/** Infraestrutura do modelo de projeto (Sites): prévia local de conectores no `vite dev`. Não contém regra do ateliê. */
 import { randomUUID } from "node:crypto";
 import { access, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";

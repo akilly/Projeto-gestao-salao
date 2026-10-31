@@ -1,3 +1,4 @@
+/** `npm run user:test:create`: aplica as migrações no D1 local e cria a conta de teste (teste@hanne.local). Nunca usar em produção. */
 import { randomBytes } from 'node:crypto';
 import { mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';

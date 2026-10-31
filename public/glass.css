@@ -118,7 +118,6 @@ html .sidebar,
 html .topbar,
 html .mobile-bottom-nav,
 html dialog,
-html .search-modal,
 html .stat,
 html .attention-card,
 html .chart-card,
@@ -173,10 +172,10 @@ html .stat, html .attention-card, html .chart-card, html .stat-link { border-rad
 
 /* Sem suporte ou com transparência reduzida: tudo sólido. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  html .sidebar, html .topbar, html .mobile-bottom-nav, html dialog, html .search-modal, html .stat, html .attention-card, html .chart-card, html .dataset-banner, html .card, html .page-guide, html .more-metrics, html .agenda-summary-link, html .stat-link, html .login { background: var(--surface-solid); }
+  html .sidebar, html .topbar, html .mobile-bottom-nav, html dialog, html .stat, html .attention-card, html .chart-card, html .dataset-banner, html .card, html .page-guide, html .more-metrics, html .agenda-summary-link, html .stat-link, html .login { background: var(--surface-solid); }
 }
 @media (prefers-reduced-transparency: reduce) {
-  html .sidebar, html .topbar, html .mobile-bottom-nav, html dialog, html .search-modal, html .stat, html .attention-card, html .chart-card, html .dataset-banner, html .card, html .page-guide, html .more-metrics, html .agenda-summary-link, html .stat-link, html .login { background: var(--surface-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  html .sidebar, html .topbar, html .mobile-bottom-nav, html dialog, html .stat, html .attention-card, html .chart-card, html .dataset-banner, html .card, html .page-guide, html .more-metrics, html .agenda-summary-link, html .stat-link, html .login { background: var(--surface-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 
 /* ---------- Navegação ---------- */
