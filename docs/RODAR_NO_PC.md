@@ -13,6 +13,16 @@ Precisa do **Node.js 22.13 ou mais novo** (`winget install OpenJS.NodeJS.LTS`).
 
 Deixe a janela aberta enquanto usa. Para parar: feche a janela ou aperte Ctrl+C.
 
+### E-mails de acesso (opcional, recomendado)
+
+Para o primeiro acesso e o "Esqueci minha senha" funcionarem por link no e-mail, dê duplo clique em **`CONFIGURAR-EMAIL.cmd`**. Ele pede:
+
+- o e-mail da titular (quem recebe os links);
+- o e-mail remetente confirmado no Brevo;
+- a chave de API do Brevo (digitada sem aparecer na tela).
+
+Ele confere a chave, manda um e-mail de teste e salva tudo em `.dev.vars`. Depois, feche e abra o `INICIAR-HANNE.cmd`. Sem e-mail configurado, o primeiro acesso usa o código de configuração mostrado na janela.
+
 - Os dados ficam na pasta do projeto, em `.wrangler\state`. **Não apague essa pasta.**
 - O código de configuração e a chave de cifragem ficam em `.dev.vars`. Não compartilhe esse arquivo.
 - Depois de atualizar o código (`git pull`), abra com `INICIAR-HANNE.cmd --build` para compilar de novo.
@@ -35,7 +45,7 @@ Depois, no sistema: **Atendimentos → WhatsApp → Conectar por QR Code**, cole
 A nuvem recomendada é a **Cloudflare (plano gratuito)**: o projeto já está pronto para ela (Workers + banco D1 + KV para anexos), sem custo para o uso de um ateliê.
 
 1. **Guarde os dados do computador:** no sistema local, Configurações → **Cópia completa JSON**.
-2. **Publique:** siga o [DEPLOY.md](../DEPLOY.md) (`npm run deploy:cloudflare` e os segredos `SETUP_TOKEN` e `WHATSAPP_ENCRYPTION_KEY`).
+2. **Publique:** siga o [DEPLOY.md](../DEPLOY.md) (`npm run deploy:cloudflare`, a chave `WHATSAPP_ENCRYPTION_KEY` e os e-mails com `npm run email:configurar -- --nuvem`).
 3. **Traga os dados:** no site publicado, antes de "Preparar operação", use Configurações → **Restaurar cópia JSON** com o arquivo do passo 1.
 4. **WhatsApp:** rode o instalador de novo com o endereço novo (a chave é mantida) e, no site publicado, cole a chave e leia o QR:
 
