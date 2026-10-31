@@ -79,6 +79,10 @@ npx wrangler secret put WHATSAPP_ENCRYPTION_KEY --name hanne-atelier
 
 O conector do WhatsApp (Baileys) não precisa de nenhum secret extra: ele roda no computador do ateliê e chama o site com a própria chave. Para receber e enviar **anexos** (fotos e áudios), crie um namespace KV e informe o ID no deploy: `npx wrangler kv namespace create hanne-media` e depois `CLOUDFLARE_KV_MEDIA_ID=<id> npm run deploy:cloudflare`.
 
+### Inteligência artificial
+
+Não precisa de segredo: o deploy liga o **Workers AI** (binding `AI`) automaticamente. O plano gratuito tem 10.000 *neurons* por dia e o sistema limita o uso para caber nisso. Veja `docs/INTELIGENCIA_ARTIFICIAL.md`.
+
 ## 5. Primeiro acesso
 
 1. Abra o endereço publicado. Com e-mail configurado, informe o e-mail da titular e abra o link recebido para criar a senha (mínimo 12 caracteres). Sem e-mail, a tela pede o código de configuração.

@@ -13,13 +13,13 @@ Sistema web em português para uma cabeleireira autônoma: agenda, clientes, ate
 |---|---|
 | Visão geral | Agenda de hoje, pendências, resumo financeiro do período e gráficos |
 | Agenda | Dia, mês ou tudo; horários sobrepostos só com confirmação explícita; cadastro rápido de cliente na reserva |
-| Atendimentos | WhatsApp pelo conector no computador do ateliê (QR Code) ou link wa.me com mensagem pronta; notas internas |
+| Atendimentos | WhatsApp pelo conector no computador do ateliê (QR Code) ou link wa.me com mensagem pronta; notas internas; IA que classifica, resume e sugere respostas |
 | Clientes | Cadastro, histórico de visitas, saldos e fichas técnicas |
 | Financeiro | Cobranças, pagamentos (Pix, dinheiro, cartão com parcelas e repasses), despesas, sinais e gráficos |
 | Estoque | Produtos em g/ml/unidade, compras, consumo por atendimento, perdas e custo médio |
 | Serviços | Catálogo e histórico mensal dos atendimentos |
 | Orçamentos e tarefas | Propostas com fotos e lista de afazeres |
-| Configurações | Expediente, conta do espaço, tema, exportações (CSV, PDF, JSON) e restauração |
+| Configurações | Expediente, conta do espaço, tema, exportações (CSV, PDF, JSON), restauração, trocar senha e sair da conta |
 
 Toda exclusão pede confirmação **e a senha da conta**, e mostra antes tudo o que será apagado junto (vínculos).
 
@@ -65,6 +65,16 @@ Detalhes de cada arquivo: [docs/MAPA_ARQUIVOS.md](docs/MAPA_ARQUIVOS.md).
 - **Demonstração isolada:** `/?dados=exemplo` usa outra base; a API recusa gravar dados fictícios na base real.
 - **Limites:** 3 MB por gravação, 10 mil itens por coleção, até 3 fotos de 500 KB por orçamento.
 
+## Inteligência artificial
+
+Com o **Workers AI** da Cloudflare (gratuito até 10.000 *neurons* por dia), o sistema:
+
+- **classifica** sozinho as conversas novas do WhatsApp (categoria e prioridade);
+- **resume** a conversa;
+- **sugere uma resposta**, que vai para o campo de resposta ou para o rascunho.
+
+A IA só sugere: nada é enviado à cliente sem você. Na nuvem, o deploy já liga a IA. No computador, use `CONFIGURAR-IA.cmd`. Detalhes em [docs/INTELIGENCIA_ARTIFICIAL.md](docs/INTELIGENCIA_ARTIFICIAL.md).
+
 ## WhatsApp
 
 Dois caminhos convivem:
@@ -87,10 +97,11 @@ O servidor também mantém o adaptador da **API oficial da Meta** (sem botão na
 | [MAPA_ARQUIVOS.md](docs/MAPA_ARQUIVOS.md) | Desenvolvimento | O que cada arquivo faz |
 | [EXCLUSAO_REGISTROS.md](docs/EXCLUSAO_REGISTROS.md) | Desenvolvimento | Regras de exclusão e cascata |
 | [SEGURANCA.md](docs/SEGURANCA.md) | Desenvolvimento | Revisão de segurança, proteções e riscos conhecidos |
+| [INTELIGENCIA_ARTIFICIAL.md](docs/INTELIGENCIA_ARTIFICIAL.md) | Todos | O que a IA faz, custo, limites e privacidade |
 | [DESIGN.md](DESIGN.md), [SISTEMA_VISUAL.md](docs/SISTEMA_VISUAL.md), [UX-CONTRACT.md](UX-CONTRACT.md) | Design | Identidade visual, componentes e comportamento |
 
 Ao mudar uma tela, um cálculo, um limite ou um contrato da API, atualize também o documento correspondente.
 
 ## Fora do escopo atual
 
-IA de classificação/transcrição, notificações push, exportação XLSX nativa, backups automáticos e estornos financeiros por lançamento de reversão.
+Transcrição de áudio por IA, notificações push, exportação XLSX nativa, backups automáticos e estornos financeiros por lançamento de reversão.

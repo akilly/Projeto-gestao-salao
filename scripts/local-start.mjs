@@ -54,10 +54,14 @@ run(wrangler, ['d1', 'migrations', 'apply', built.d1_databases[0].binding, '--lo
 console.log(`\n=================================================================
  Hanne rodando neste computador:  http://localhost:${port}
  ${created ? `Primeiro acesso: use o código de configuração ${vars.SETUP_TOKEN}` : 'Código de configuração: veja SETUP_TOKEN no arquivo .dev.vars'}
+ IA (classificação, resumo e sugestão): ${vars.HANNE_IA === '1' ? 'ativa (Workers AI)' : 'desligada. Rode CONFIGURAR-IA.cmd'}
  E-mails (primeiro acesso e esqueci a senha): ${vars.BREVO_API_KEY && vars.MAIL_FROM ? 'configurados para ' + (vars.OWNER_EMAIL || '(defina OWNER_EMAIL)') : 'não configurados. Rode CONFIGURAR-EMAIL.cmd'}
  Deixe esta janela aberta. Para parar: Ctrl+C.
 =================================================================\n`);
-const server = spawn(process.execPath, ['--import', './scripts/sites-env.mjs', wrangler, 'dev', '--config', 'dist/server/wrangler.json', '--local', '--persist-to', state, '--env-file', varsFile, '--ip', '127.0.0.1', '--port', String(port), '--inspector-port', '0', '--show-interactive-dev-session=false'], { cwd: root, stdio: 'inherit', env });
+// IA (Workers AI) roda sempre na nuvem da Cloudflare: só liga quando CONFIGURAR-IA.cmd fez o login (HANNE_IA=1).
+let serverConfig = 'dist/server/wrangler.json';
+if (vars.HANNE_IA === '1') { writeFileSync(path.join(root, 'dist', 'server', 'wrangler.local.json'), JSON.stringify({ ...built, ai: { binding: 'AI' } })); serverConfig = 'dist/server/wrangler.local.json'; }
+const server = spawn(process.execPath, ['--import', './scripts/sites-env.mjs', wrangler, 'dev', '--config', serverConfig, '--local', '--persist-to', state, '--env-file', varsFile, '--ip', '127.0.0.1', '--port', String(port), '--inspector-port', '0', '--show-interactive-dev-session=false'], { cwd: root, stdio: 'inherit', env });
 server.on('exit', code => process.exit(code ?? 0));
 // --open: abre o navegador quando o servidor responder (Windows/macOS/Linux).
 if (process.argv.includes('--open')) (async () => {

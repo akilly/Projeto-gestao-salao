@@ -494,3 +494,11 @@ dialog .dialog-head h2 { font: 750 18px Manrope, system-ui, sans-serif; letter-s
 
 /* Aviso "E mais N pendências" alinhado às linhas da lista. */
 .attention-more { margin: 0; padding: 10px 22px; border-bottom: 1px solid var(--line); }
+
+/* IA nas conversas (resumo, sugestão e etiqueta) */
+.wa-ai { display: grid; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.wa-ai:empty { display: none; }
+.wa-ai-summary { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); line-height: 1.5; }
+.wa-ai-tag { align-self: flex-start; font-size: 11px; margin: 2px 0; }
+.summary-box .row, .draft-box .row { align-items: center; }
+.account-row .row { justify-content: flex-end; }
