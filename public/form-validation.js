@@ -6,8 +6,9 @@ export function validateVisibleControls(form) {
     let error = form.querySelector('[role="alert"]');
     if (!error) { error = document.createElement('div'); error.className = 'form-error'; error.setAttribute('role', 'alert'); form.prepend(error); }
     if (!error.id) error.id = 'validation-error';
-    const label = invalid.getAttribute('aria-label') || invalid.labels?.[0]?.querySelector('span')?.textContent || invalid.labels?.[0]?.childNodes?.[0]?.textContent?.trim() || invalid.name || 'Campo';
-    error.textContent = label + ': ' + (invalid.validity.valueMissing ? 'preencha este campo.' : invalid.validity.rangeUnderflow ? 'use um valor igual ou maior que ' + invalid.min + '.' : invalid.validity.rangeOverflow ? 'use um valor igual ou menor que ' + invalid.max + '.' : 'confira o formato e o valor informado.');
+    // data-label tem prioridade: rótulos com botões internos (ex.: "Mostrar" da senha) não viram o nome do campo.
+    const label = invalid.dataset.label || invalid.getAttribute('aria-label') || invalid.labels?.[0]?.querySelector('span')?.textContent || invalid.labels?.[0]?.childNodes?.[0]?.textContent?.trim() || invalid.name || 'Campo';
+    error.textContent = label + ': ' + (invalid.validity.valueMissing ? 'preencha este campo.' : invalid.validity.rangeUnderflow ? 'use um valor igual ou maior que ' + invalid.min + '.' : invalid.validity.rangeOverflow ? 'use um valor igual ou menor que ' + invalid.max + '.' : invalid.validity.tooShort ? 'use pelo menos ' + invalid.minLength + ' caracteres.' : invalid.validity.typeMismatch && invalid.type === 'email' ? 'informe um e-mail válido.' : 'confira o formato e o valor informado.');
     invalid.setAttribute('aria-invalid', 'true'); invalid.setAttribute('aria-describedby', error.id); invalid.focus();
     return false;
 }
