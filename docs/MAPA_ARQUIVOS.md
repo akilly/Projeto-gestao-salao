@@ -63,6 +63,7 @@ O que cada arquivo versionado faz. Cada módulo também tem um comentário de ca
 | Arquivo | Papel |
 |---|---|
 | `scripts/deploy-cloudflare.mjs` | `npm run deploy:cloudflare`: build, migrações remotas e publicação |
+| `scripts/local-start.mjs`, `INICIAR-HANNE.cmd` | `npm run local`: roda o sistema no computador (http://localhost:8787) com banco local |
 | `scripts/run-tests.mjs` | `npm test`: roda a suíte |
 | `scripts/create-local-test-user.mjs` | Cria a conta de teste no D1 local |
 | `scripts/run-framework.mjs`, `scripts/execution-profile.mjs`, `scripts/sites-env.*` | Execução do dev/build e ambiente local |

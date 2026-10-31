@@ -3,7 +3,8 @@
 Sistema web em português para uma cabeleireira autônoma: agenda, clientes, atendimentos (WhatsApp), financeiro, estoque, serviços, orçamentos e tarefas. Pensado primeiro para o celular, com temas claro e escuro.
 
 - **Hospedagem:** Cloudflare Workers (Vinext/Vite) + banco D1 + Workers KV (anexos do WhatsApp). Cabe no plano gratuito.
-- **Publicar:** siga o [DEPLOY.md](DEPLOY.md).
+- **Testar no seu computador:** duplo clique em `INICIAR-HANNE.cmd` ([guia](docs/RODAR_NO_PC.md)).
+- **Publicar na nuvem gratuita:** siga o [DEPLOY.md](DEPLOY.md).
 - **Manual da usuária:** [docs/MANUAL_USUARIO.md](docs/MANUAL_USUARIO.md).
 
 ## O que o sistema faz
@@ -78,6 +79,7 @@ O servidor também mantém o adaptador da **API oficial da Meta** (sem botão na
 | Documento | Para quem | Conteúdo |
 |---|---|---|
 | [MANUAL_USUARIO.md](docs/MANUAL_USUARIO.md) e [Manual com prints (PDF)](docs/manual/Manual-Hanne.pdf) | Profissional | Rotina de uso, tela por tela |
+| [RODAR_NO_PC.md](docs/RODAR_NO_PC.md) | Profissional | Rodar no computador e migrar para a nuvem depois |
 | [DEPLOY.md](DEPLOY.md) | Quem publica | Publicação na Cloudflare, segredos e primeiro acesso |
 | [WHATSAPP_NO_COMPUTADOR.md](docs/WHATSAPP_NO_COMPUTADOR.md) | Profissional | Instalar o conector do WhatsApp no Windows |
 | [DOCUMENTACAO_TECNICA.md](docs/DOCUMENTACAO_TECNICA.md) | Desenvolvimento | Arquitetura, modelo de dados, API, cálculos e segurança |
