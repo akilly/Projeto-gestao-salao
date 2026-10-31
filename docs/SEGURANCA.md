@@ -38,6 +38,16 @@ Escopo: código do site (rotas, autenticação, API de estado, WhatsApp/conector
 - O link usa `APP_ORIGIN`, para que um cabeçalho `Host` forjado não desvie o link para outro site. O token sai da barra de endereço assim que a página abre, e `Referrer-Policy: no-referrer` impede que ele vaze para outros sites.
 - Redefinir a senha encerra todas as sessões.
 
+## Troca de senha e IA (adicionados depois da revisão)
+
+- **Trocar senha** (Configurações → Sua conta) exige a sessão aberta e a senha atual, com limite de tentativas. A troca encerra as sessões dos outros aparelhos e renova a cookie deste.
+- **Sair da conta** apaga a sessão no servidor. Só pede confirmação quando há alteração ainda sendo salva.
+- **IA:**
+  - só para a titular autenticada, com checagem de origem;
+  - limite diário por tarefa e conversa limitada a 20 mensagens e 6.000 caracteres;
+  - o conteúdo das clientes vai como dado, com instrução para ignorar comandos embutidos;
+  - a resposta da IA nunca é enviada nem aplicada sem a profissional.
+
 ## Riscos conhecidos e recomendações
 
 1. **Plano gratuito da Cloudflare (10 ms de CPU):** o PBKDF2 do login pode passar desse limite em alguns pedidos (erro 1102). Se acontecer, o plano Workers Paid resolve sem mudar o código.
