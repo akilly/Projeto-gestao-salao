@@ -18,7 +18,9 @@ O que cada arquivo versionado faz. Cada módulo também tem um comentário de ca
 | Arquivo | Papel |
 |---|---|
 | `lib/state-handler.mjs` | Persistência do estado no D1 com revisão otimista, auditoria, base de demonstração isolada e exclusão por plano confirmado |
-| `lib/salon-auth.mjs` | Conta única: PBKDF2, sessões opacas, limite de tentativas, confirmação de senha para exclusões |
+| `lib/salon-auth.mjs` | Conta única: PBKDF2, sessões opacas, limite de tentativas, links de acesso por e-mail, confirmação de senha para exclusões |
+| `lib/mailer.mjs` | Envio de e-mails pelo Brevo e modelo do e-mail de acesso |
+| `lib/security-headers.mjs` | Cabeçalhos de segurança das páginas (CSP, anti-iframe, Referrer-Policy, HSTS) |
 | `lib/whatsapp-handler.mjs` | Canal de WhatsApp: conexão, conversas, envio, anexos, sincronização do conector Baileys e webhook da Meta |
 | `lib/whatsapp-domain.mjs` | Regras puras do canal: telefone, janela de 24 h, cifragem AES-GCM, validação de mídia |
 | `lib/meta-cloud.mjs` | Adaptador da API oficial da Meta (sem botão na tela atual) |
@@ -41,7 +43,7 @@ O que cada arquivo versionado faz. Cada módulo também tem um comentário de ca
 | `wa-link.js` | Link wa.me com mensagem pronta e contexto da cliente |
 | `whatsapp.js` | Caixa do WhatsApp integrada (conector Baileys) |
 | `form-validation.js` | Mensagens de validação em português, sem balões nativos |
-| `theme.js` | Tema claro/escuro salvo no navegador |
+| `theme.js`, `theme-boot.js` | Tema claro/escuro salvo no navegador (`theme-boot.js` aplica antes de pintar, sem script inline) |
 | `examples.js` | Dados fictícios da demonstração |
 | `login.js` | Comportamento da página de entrada |
 | `style.css` → `atelier.css` → `theme.css` → `glass.css` | Estilos em camadas, carregados nesta ordem: base, direção visual do ateliê, tokens claro/escuro, efeito vidro |
@@ -63,6 +65,7 @@ O que cada arquivo versionado faz. Cada módulo também tem um comentário de ca
 | Arquivo | Papel |
 |---|---|
 | `scripts/deploy-cloudflare.mjs` | `npm run deploy:cloudflare`: build, migrações remotas e publicação |
+| `scripts/configurar-email.mjs`, `CONFIGURAR-EMAIL.cmd` | `npm run email:configurar`: configura o Brevo (local ou `--nuvem`) e manda e-mail de teste |
 | `scripts/local-start.mjs`, `INICIAR-HANNE.cmd` | `npm run local`: roda o sistema no computador (http://localhost:8787) com banco local |
 | `scripts/run-tests.mjs` | `npm test`: roda a suíte |
 | `scripts/create-local-test-user.mjs` | Cria a conta de teste no D1 local |
