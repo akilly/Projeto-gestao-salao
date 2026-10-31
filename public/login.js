@@ -7,7 +7,8 @@ import { validateVisibleControls } from './form-validation.js';
  *   login        e-mail + senha
  *   link-setup   primeiro acesso: pede um link por e-mail (só o e-mail da titular recebe)
  *   link-reset   "esqueci minha senha": pede um link por e-mail
- *   complete     aberto pelo link do e-mail (?acesso=...): define a senha e já entra
+ *   complete     aberto pelo link do e-mail (?acesso=...): define a senha e já entra (primeiro acesso, nova senha ou convite)
+ *   confirm-email  aberto pelo link de troca de e-mail (?email=...): confirma com um clique (sem entrar)
  *   setup/reset  alternativa sem e-mail, com o código de configuração (SETUP_TOKEN)
  */
 const form = document.querySelector('#login');
@@ -25,16 +26,19 @@ const field = name => document.querySelector('#field-' + name);
 let mode = 'login';
 let status = null;
 // O token do link fica só na memória e sai da barra de endereço (histórico e compartilhamento de tela).
-const accessToken = new URLSearchParams(location.search).get('acesso') || '';
-if (accessToken) history.replaceState(null, '', '/login');
+const params = new URLSearchParams(location.search);
+const accessToken = params.get('acesso') || '';
+const emailToken = params.get('email') || '';
+if (accessToken || emailToken) history.replaceState(null, '', '/login');
 
 const MODES = {
-  login: { title: 'Entrar no seu espaço', intro: 'Use o e-mail e a senha da conta da titular.', button: 'Entrar', fields: ['email', 'password'] },
+  login: { title: 'Entrar no seu espaço', intro: 'Use o e-mail e a senha da sua conta.', button: 'Entrar', fields: ['email', 'password'] },
   'link-setup': { title: 'Primeiro acesso', intro: 'Informe o e-mail da titular. Vamos enviar um link para você criar sua senha.', button: 'Enviar link por e-mail', fields: ['email'] },
   'link-reset': { title: 'Esqueci minha senha', intro: 'Informe o e-mail da conta. Vamos enviar um link para criar uma nova senha. As sessões abertas em outros aparelhos serão encerradas.', button: 'Enviar link por e-mail', fields: ['email'] },
   complete: { title: 'Crie sua senha', intro: 'Escolha uma senha com pelo menos 12 caracteres. Depois disso você já entra no sistema.', button: 'Salvar senha e entrar', fields: ['password', 'repeat'] },
+  'confirm-email': { title: 'Confirme seu novo e-mail', intro: 'Toque no botão para passar a usar este endereço no login do Hanne. A senha continua a mesma.', button: 'Confirmar novo e-mail', fields: [] },
   setup: { title: 'Crie a conta da titular', intro: 'Informe o código de configuração, o e-mail e uma senha com pelo menos 12 caracteres.', button: 'Criar conta e entrar', fields: ['code', 'email', 'password', 'repeat'] },
-  reset: { title: 'Redefina sua senha', intro: 'Informe o código de configuração e a nova senha. As sessões abertas em outros aparelhos serão encerradas.', button: 'Redefinir senha e entrar', fields: ['code', 'email', 'password', 'repeat'] },
+  reset: { title: 'Redefina sua senha', intro: 'Informe o código de configuração, o e-mail da conta e a nova senha. As sessões abertas em outros aparelhos serão encerradas.', button: 'Redefinir senha e entrar', fields: ['code', 'email', 'password', 'repeat'] },
 };
 
 function setError(message = '') {
@@ -68,6 +72,7 @@ function setMode(next) {
 function applyStatus(next) {
   status = next;
   missingCode.hidden = true;
+  if (emailToken) return setMode('confirm-email');
   if (accessToken) return setMode('complete');
   if (status.configured) return setMode('login');
   if (status.emailSetup) return setMode('link-setup');
@@ -117,6 +122,7 @@ function requestFor() {
   if (mode === 'login') return ['login', { email: value('email'), password: value('password') }];
   if (mode === 'link-setup' || mode === 'link-reset') return ['request-link', { email: value('email'), purpose: mode === 'link-setup' ? 'setup' : 'reset' }];
   if (mode === 'complete') return ['complete', { token: accessToken, password: value('password') }];
+  if (mode === 'confirm-email') return ['confirm-email', { token: emailToken }];
   return [mode, { email: value('email'), password: value('password'), setupCode: value('setupCode') }];
 }
 
@@ -140,11 +146,12 @@ form.addEventListener('submit', async event => {
     const response = await fetch('/api/auth/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Não foi possível concluir.');
-    if (path === 'request-link') {
+    if (path === 'request-link' || path === 'confirm-email') {
       form.hidden = true;
       sent.hidden = false;
       sent.querySelector('p').textContent = data.message || 'Se o e-mail estiver correto, você vai receber um link em alguns minutos.';
       back.hidden = false;
+      if (path === 'confirm-email') status = { ...status, configured: true };
       recover.hidden = true;
       useCode.hidden = true;
       sent.focus();

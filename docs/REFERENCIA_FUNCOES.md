@@ -177,9 +177,12 @@ As funções abaixo estão comentadas junto à implementação. A lista cobre as
 
 ## lib/salon-auth.mjs
 
-- `salonIdentity`: valida sessão ativa e libera a identidade confiável da hospedagem somente durante o primeiro cadastro.
+- `salonIdentity`: devolve o `owner_id` da sessão, só para conta existente e ativa.
 - `authorizeRequest`: recria uma requisição compatível com o Worker e injeta a identidade da sessão para os handlers protegidos.
-- `handleAuth`: atende status, cadastro inicial, login, saída e recuperação da conta titular.
+- `confirmPassword`: confere a senha da conta da sessão antes de exclusões.
+- `handleAuth`: atende status, cadastro inicial, login, saída, recuperação, troca de senha/e-mail e, para a titular, `users`, `invite`, `cancel-invite` e `user-access`.
+- `createAccount` / `setPassword`: cria a conta (titular ou convidada) / grava senha nova e encerra as sessões daquela conta.
+- `issueLink` / `consumeLink`: link de uso único (só o hash fica no banco; o anterior do mesmo tipo e e-mail deixa de valer).
 - `derive`, `digest` e `timingEqual`: derivam e comparam credenciais sem armazenar senha em texto puro.
 
 ## public/form-validation.js
@@ -288,7 +291,7 @@ As funções abaixo estão comentadas junto à implementação. A lista cobre as
 - `classify`: categoria e prioridade, sempre dentro da lista; segurança é sempre prioridade alta.
 - `summarize` / `suggestReply`: resumo curto e rascunho de resposta com o contexto da cliente.
 - `normalizeMessages`: limita o histórico (20 mensagens, 6.000 caracteres) mantendo o final.
-- `takeQuota`: contador diário por tarefa (`ai_usage`).
+- `takeQuota`: contador diário por salão e tarefa (`ai_usage`).
 - `handleAI`: rota `/api/ai/*` (sessão, origem, cota, erros amigáveis).
 - `classifyPending` (`lib/whatsapp-handler.mjs`): classifica até 2 conversas com mensagem nova a cada consulta da lista.
 - Interface: `aiRun`, `aiContext`, `aiNote` (`public/app.js`) e `runAI` (`public/whatsapp.js`).
@@ -297,3 +300,5 @@ As funções abaixo estão comentadas junto à implementação. A lista cobre as
 
 - `changePassword` (`lib/salon-auth.mjs`): troca com a senha atual, encerra as outras sessões e renova a atual.
 - `passwordForm` (`public/app.js`): janela de troca de senha em Configurações → Sua conta.
+- `changeEmail` / `confirmEmail` (`lib/salon-auth.mjs`): troca de e-mail com a senha atual; com e-mail configurado, só vale após o link enviado ao novo endereço.
+- `emailForm`, `inviteForm`, `inviteLinkModal`, `salonsSection`, `loadSalons`, `authPost` (`public/app.js`): troca de e-mail e gestão dos salões pela titular.

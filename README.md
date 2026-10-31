@@ -59,7 +59,7 @@ Detalhes de cada arquivo: [docs/MAPA_ARQUIVOS.md](docs/MAPA_ARQUIVOS.md).
 
 ## Regras importantes
 
-- **Conta única:** só a titular entra. Primeiro acesso e "Esqueci minha senha" por link no e-mail (Brevo) ou pelo código de configuração (`SETUP_TOKEN`).
+- **Vários salões:** cada conta é um salão com dados separados. A primeira conta é a titular, que convida os outros salões (Configurações → Salões). Primeiro acesso e "Esqueci minha senha" por link no e-mail (Brevo) ou pelo código de configuração (`SETUP_TOKEN`); troca de senha e de e-mail em Configurações → Sua conta.
 - **Gravação segura:** o estado é salvo no D1 com revisão otimista e auditoria na mesma transação. Edição concorrente gera conflito explícito, sem perder o rascunho.
 - **Histórico financeiro preservado:** valores confirmados não são sobrescritos; exclusões seguem um plano de cascata validado pelo servidor.
 - **Demonstração isolada:** `/?dados=exemplo` usa outra base; a API recusa gravar dados fictícios na base real.

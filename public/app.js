@@ -208,10 +208,13 @@ const categoryColor = cat => cat === 'Segurança' ? 'red' : cat === 'Agendamento
 /* ---------- Inteligência artificial (Workers AI, sempre como sugestão) ---------- */
 const AI_CATEGORIES = ['Segurança', 'Agendamento urgente', 'Agendamento', 'Pós-procedimento', 'Orçamento', 'Informações gerais', 'Reclamação', 'Exige esclarecimentos', 'Spam ou suspeita'];
 let aiBusy = '';
-let aiStatus = null, accountEmail = '';
-/** Carrega, sem travar a tela, o estado da IA e o e-mail da conta (usados em Configurações). */
+let aiStatus = null, accountEmail = '', accountRole = '', emailDelivery = false;
+// Salões cadastrados e convites pendentes (só a titular recebe esta lista do servidor).
+let salons = null;
+/** Carrega, sem travar a tela, o estado da IA, a conta e (para a titular) os salões. Usados em Configurações. */
 async function loadAccountInfo() {
-    try { const r = await fetch('/api/auth/status', { cache: 'no-store' }); if (r.ok) accountEmail = (await r.json()).email || ''; } catch { /* opcional */ }
+    try { const r = await fetch('/api/auth/status', { cache: 'no-store' }); if (r.ok) { const info = await r.json(); accountEmail = info.email || ''; accountRole = info.role || ''; emailDelivery = !!info.emailEnabled; } } catch { /* opcional */ }
+    if (accountRole === 'admin') await loadSalons();
     try { const r = await fetch('/api/ai/status', { cache: 'no-store' }); aiStatus = r.ok ? await r.json() : { enabled: false }; } catch { aiStatus = { enabled: false }; }
     if (ui.page === 'settings') render();
 }
@@ -234,6 +237,62 @@ document.addEventListener('submit', async e => {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || 'Não foi possível trocar a senha.');
         form.reset(); closeModal(true); toast('Senha trocada. Os outros aparelhos vão precisar entrar de novo.');
+    }
+    catch (err) { error.textContent = err.message; }
+    finally { button.disabled = false; }
+});
+/* ---------- Conta: e-mail de acesso e salões (contas separadas) ---------- */
+/** POST para /api/auth/{caminho}. Devolve o JSON ou lança erro com a mensagem do servidor. */
+async function authPost(path, body) {
+    const response = await fetch('/api/auth/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Não foi possível concluir. Tente novamente.');
+    return data;
+}
+async function loadSalons() {
+    try { const r = await fetch('/api/auth/users', { cache: 'no-store' }); salons = r.ok ? await r.json() : null; } catch { salons = null; }
+    if (ui.page === 'settings') render();
+}
+/** Troca do e-mail de login: pede a senha atual; com envio de e-mail ativo, só muda depois da confirmação. */
+function emailForm() {
+    modal('Trocar e-mail de acesso', `<form id="email-form" novalidate><div class="dialog-body form-grid"><label class="field full"><span>Novo e-mail</span><input type="email" name="newEmail" data-label="Novo e-mail" autocomplete="email" required maxlength="254"></label><label class="field full"><span>Confirme o novo e-mail</span><input type="email" name="repeatEmail" data-label="Confirme o novo e-mail" autocomplete="off" required maxlength="254"></label><label class="field full"><span>Senha atual</span><input type="password" name="password" data-label="Senha atual" autocomplete="current-password" required maxlength="200"></label><p class="notice full">${emailDelivery ? 'Vamos enviar um link para o novo e-mail. A troca só vale depois que você abrir esse link; até lá, entre com o e-mail atual.' : 'O envio de e-mails não está configurado: o e-mail muda na hora. Confira com atenção, porque é ele que você vai digitar no login.'}</p><p id="email-error" role="alert" class="full small" style="color:var(--red)"></p></div><div class="dialog-footer">${btn('Cancelar', 'close-modal', '', 'secondary')}<button type="submit" class="btn primary">${icon('check')}${emailDelivery ? 'Enviar confirmação' : 'Trocar e-mail'}</button></div></form>`);
+}
+/** Convite de um salão novo: conta e dados separados; a pessoa cria a própria senha pelo link. */
+function inviteForm() {
+    modal('Convidar salão', `<form id="invite-form" novalidate><div class="dialog-body form-grid"><label class="field full"><span>E-mail de quem vai usar</span><input type="email" name="email" data-label="E-mail" autocomplete="off" required maxlength="254"></label><p class="notice full">O salão novo começa vazio: clientes, agenda, financeiro, estoque e WhatsApp são só dele. Você não vê os dados de lá, e ele não vê os seus. ${emailDelivery ? 'O link de convite vai por e-mail e vale 7 dias.' : 'Sem envio de e-mail configurado, você recebe o link aqui para mandar à pessoa (vale 7 dias).'}</p><p id="invite-error" role="alert" class="full small" style="color:var(--red)"></p></div><div class="dialog-footer">${btn('Cancelar', 'close-modal', '', 'secondary')}<button type="submit" class="btn primary">${icon('plus')}Criar convite</button></div></form>`);
+}
+function inviteLinkModal(link) {
+    const local = /^https?:\/\/(127\.0\.0\.1|localhost)/.test(link);
+    modal('Link de convite', `<div class="dialog-body form-grid"><label class="field full"><span>Envie este link para a pessoa (WhatsApp, por exemplo)</span><input id="invite-link" readonly value="${esc(link)}"></label><p class="notice full">O link só pode ser usado uma vez e vale 7 dias. Ele não aparece de novo depois que esta janela fechar; se perder, cancele e convide outra vez.${local ? ' Atenção: o Hanne está rodando no seu computador, então este link só abre nele. Para outra pessoa usar de outro aparelho, publique o Hanne na nuvem.' : ''}</p></div><div class="dialog-footer">${btn('Fechar', 'close-modal', '', 'secondary')}${btn('Copiar link', 'copy-invite', 'copy', 'primary')}</div>`);
+}
+/** Seção de Configurações visível só para a titular. */
+function salonsSection() {
+    if (accountRole !== 'admin') return '';
+    const users = salons?.users || [], invites = salons?.invites || [];
+    const userRow = u => `<div class="setting-row account-row"><div><strong>${esc(u.email)}</strong><p>${u.role === 'admin' ? 'Titular · convida e desativa salões' : 'Salão · dados próprios'}${u.createdAt ? ' · desde ' + new Date(u.createdAt).toLocaleDateString('pt-BR') : ''}</p></div><div class="row wrap gap8">${pill(u.you ? 'Você' : u.disabled ? 'Desativado' : 'Ativo', u.disabled ? 'gray' : 'green')}${u.role === 'admin' ? '' : btn(u.disabled ? 'Reativar' : 'Desativar', 'salon-access', u.disabled ? 'undo' : 'lock', 'secondary sm', `data-id="${esc(u.id)}" data-disabled="${u.disabled ? '0' : '1'}"`)}</div></div>`;
+    const inviteRow = i => `<div class="setting-row account-row"><div><strong>${esc(i.email)}</strong><p>Convite pendente · vale até ${new Date(i.expiresAt).toLocaleDateString('pt-BR')}</p></div><div class="row wrap gap8">${pill('Aguardando', 'orange')}${btn('Cancelar convite', 'cancel-invite', 'close', 'secondary sm', `data-email="${esc(i.email)}"`)}</div></div>`;
+    return `<section class="card settings-card" id="saloes"><div class="row between wrap gap8"><h2>Salões</h2>${btn('Convidar salão', 'invite-salon', 'plus', 'primary sm')}</div><p class="small muted">Cada salão entra com o próprio e-mail e senha e tem clientes, agenda, financeiro, estoque e WhatsApp separados. Desativar só bloqueia o acesso: os dados ficam guardados.</p>${salons ? users.map(userRow).join('') + invites.map(inviteRow).join('') : '<p class="small muted">Carregando…</p>'}</section>`;
+}
+document.addEventListener('submit', async e => {
+    const form = e.target;
+    if (form.id !== 'email-form' && form.id !== 'invite-form') return;
+    e.preventDefault();
+    const error = form.querySelector('[role=alert]'), button = form.querySelector('[type=submit]');
+    error.textContent = '';
+    if (!validateVisibleControls(form)) return;
+    if (form.id === 'email-form' && form.elements.newEmail.value.trim().toLowerCase() !== form.elements.repeatEmail.value.trim().toLowerCase()) { error.textContent = 'Os dois e-mails precisam ser iguais.'; form.elements.repeatEmail.focus(); return; }
+    button.disabled = true;
+    try {
+        if (form.id === 'email-form') {
+            const data = await authPost('change-email', { newEmail: form.elements.newEmail.value, password: form.elements.password.value });
+            if (data.email) accountEmail = data.email;
+            form.reset(); closeModal(true); toast(data.message); if (ui.page === 'settings') render();
+        } else {
+            const data = await authPost('invite', { email: form.elements.email.value });
+            form.reset(); closeModal(true);
+            if (data.link) inviteLinkModal(data.link); else toast(data.message);
+            void loadSalons();
+        }
     }
     catch (err) { error.textContent = err.message; }
     finally { button.disabled = false; }
@@ -1210,6 +1269,20 @@ document.addEventListener('click', async (e) => {
         openForm('Revisar classificação', 'classify', selectField('Categoria confirmada por você', 'category', AI_CATEGORIES.map(t => [t, t]), v.category, 'required', true) + `<div class="full row wrap gap8">${btn('Sugerir com IA', 'ai-note-classify', 'spark', 'secondary sm', `data-id="${id}"`)}<span id="ai-classify-reason" class="small muted" role="status"></span></div><div class="notice full">A IA só sugere: a categoria vale quando você confirma. A correção fica no histórico desta conta.</div>`, 'Confirmar categoria', id);
     }
     if (a === 'change-password') passwordForm();
+    if (a === 'change-email') emailForm();
+    if (a === 'invite-salon') inviteForm();
+    if (a === 'copy-invite') {
+        const input = document.getElementById('invite-link');
+        try { await navigator.clipboard.writeText(input.value); toast('Link copiado.'); } catch { input.select(); toast('Selecionei o link: copie com Ctrl+C.'); }
+    }
+    if (a === 'cancel-invite' || a === 'salon-access') {
+        target.disabled = true;
+        try {
+            if (a === 'cancel-invite') { await authPost('cancel-invite', { email: target.dataset.email }); toast('Convite cancelado. O link deixou de valer.'); }
+            else { const off = target.dataset.disabled === '1'; await authPost('user-access', { id, disabled: off }); toast(off ? 'Salão desativado. As sessões dele foram encerradas; os dados continuam guardados.' : 'Salão reativado.'); }
+            await loadSalons();
+        } catch (err) { toast(err.message); target.disabled = false; }
+    }
     if (a === 'ai-note-summary') void aiNote('summary', id);
     if (a === 'ai-note-reply') void aiNote('reply', id);
     if (a === 'ai-note-classify') {
@@ -1924,7 +1997,7 @@ function setupPage() { const cutoff = state.settings.cutoff, steps = [['Data de 
 /**
  * settingsPage — Renderiza preferências, expediente e opções manuais de dados e auditoria.
  */
-function settingsPage() { return `${heading('Configurações', 'Aparência, horários de trabalho e preferências do ateliê.')}<div class="toolbar">${btn('Preparar operação', 'nav', 'arrow', 'primary', 'data-page="setup"')}${btn('Exportar dados', 'export-modal', 'download', 'secondary')}${btn('Cópia completa JSON', 'backup', 'download', 'secondary')}${dataset === 'real' && baseIsEmpty() ? btn('Restaurar cópia JSON', 'v14-restore', 'upload', 'secondary') : ''}${btn(dataset === 'example' ? 'Voltar aos dados reais' : 'Ver demonstração', 'v3-dataset', 'spark', 'text', `data-dataset="${dataset === 'example' ? 'real' : 'example'}"`)}</div><section class="card appearance-card"><div><span class="eyebrow">Deixe confortável para você</span><h2>Aparência</h2><p>Escolha entre claro e escuro suave. Sua escolha fica salva neste dispositivo.</p></div>${themeControl()}</section><div class="settings-grid"><section class="card settings-card"><h2>Sua rotina</h2><form novalidate data-form="settings"><div class="form-grid">${field('Como prefere ser chamada?', 'name', state.settings.name, 'text', 'required maxlength="50"', true)}${field('Início do expediente', 'open', state.settings.open, 'time', 'required')}${field('Fim do expediente', 'close', state.settings.close, 'time', 'required')}${field('Prazo de resposta de referência (min)', 'responseMinutes', state.settings.responseMinutes, 'number', 'required min="5" max="1440"', true)}<div class="full"><span class="small">Dias de folga</span><div class="weekday-checks">${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d, i) => `<label><input type="checkbox" name="closedDays" value="${i}" ${state.settings.closedDays.includes(i) ? 'checked' : ''}>${d}</label>`).join('')}</div></div><div id="settings-error" role="alert" class="full small" style="color:var(--red)"></div><div class="full"><button type="submit" class="btn primary">Salvar rotina</button></div></div></form></section><section class="card settings-card" id="conta"><h2>Sua conta</h2><div class="setting-row account-row"><div><strong>${esc(accountEmail || "Conta da titular")}</strong><p>Entrada com e-mail e senha. Trocar a senha encerra o acesso nos outros aparelhos.</p></div><div class="row wrap gap8">${btn("Trocar senha", "change-password", "lock", "secondary sm")}<a class="btn secondary sm" href="/login" data-salon-logout>${icon("arrow")}Sair da conta</a></div></div></section><section class="card settings-card"><h2>Conexões e acesso</h2><div class="setting-row"><div><strong>Dados persistentes</strong><p>Registros vinculados à conta autenticada, com conferência de versão para alterações simultâneas.</p></div>${pill(syncStatus === 'saved' ? 'Sincronizado' : 'Conferir', syncStatus === 'saved' ? 'green' : 'orange')}</div><div class="setting-row"><div><strong>WhatsApp Business</strong><p>O conector Baileys permite vincular por QR Code e receber e enviar textos, imagens e áudios. Requer um servidor Node sempre ligado. Confira a conexão em Atendimentos → WhatsApp. Notas internas continuam separadas.</p></div>${btn('Configurar', 'integrations', 'link', 'secondary sm')}</div><div class="setting-row"><div><strong>Inteligência artificial</strong><p>${aiStatus?.enabled ? `Classificação automática das conversas do WhatsApp, resumo e sugestão de resposta (Workers AI). Hoje: ${aiStatus.usage?.classify || 0} classificações, ${(aiStatus.usage?.summary || 0) + (aiStatus.usage?.reply || 0)} resumos/respostas. A IA só sugere; nada é enviado sem você.` : 'Classificação, resumo e sugestão de resposta com o Workers AI (gratuito até a cota diária). No computador, ligue com CONFIGURAR-IA.cmd; na nuvem, já vem ativa. Transcrição de áudio ainda não está ativada.'}</p></div>${pill(aiStatus?.enabled ? 'Ativa' : aiStatus ? 'Desligada' : 'Verificando', aiStatus?.enabled ? 'green' : 'gray')}</div><div class="setting-row"><div><strong>Acesso individual</strong><p>Conta única da Hanne com e-mail e senha. A conta é criada uma única vez com o código de configuração da hospedagem, que também permite redefinir a senha. As sessões expiram em 12 horas.</p></div>${icon('shield')}</div></section><section class="card settings-card full"><h2>Histórico de ações confirmadas</h2><p class="small muted">As alterações salvas ficam registradas no servidor. Última sincronização: ${lastSavedAt ? new Date(lastSavedAt).toLocaleString('pt-BR') : 'nenhuma alteração ainda'}.</p>${state.audit.slice(0, 8).map(a => `<div class="audit-row">${esc(a.action)}<time>${new Date(a.at).toLocaleString('pt-BR')} · ${esc(a.by)}</time></div>`).join('') || empty('O histórico começa com sua primeira alteração.')}${state.audit.length ? btn('Histórico completo', 'audit', 'arrow', 'text') : ''}</section></div>`; }
+function settingsPage() { return `${heading('Configurações', 'Aparência, horários de trabalho e preferências do ateliê.')}<div class="toolbar">${btn('Preparar operação', 'nav', 'arrow', 'primary', 'data-page="setup"')}${btn('Exportar dados', 'export-modal', 'download', 'secondary')}${btn('Cópia completa JSON', 'backup', 'download', 'secondary')}${dataset === 'real' && baseIsEmpty() ? btn('Restaurar cópia JSON', 'v14-restore', 'upload', 'secondary') : ''}${btn(dataset === 'example' ? 'Voltar aos dados reais' : 'Ver demonstração', 'v3-dataset', 'spark', 'text', `data-dataset="${dataset === 'example' ? 'real' : 'example'}"`)}</div><section class="card appearance-card"><div><span class="eyebrow">Deixe confortável para você</span><h2>Aparência</h2><p>Escolha entre claro e escuro suave. Sua escolha fica salva neste dispositivo.</p></div>${themeControl()}</section><div class="settings-grid"><section class="card settings-card"><h2>Sua rotina</h2><form novalidate data-form="settings"><div class="form-grid">${field('Como prefere ser chamada?', 'name', state.settings.name, 'text', 'required maxlength="50"', true)}${field('Início do expediente', 'open', state.settings.open, 'time', 'required')}${field('Fim do expediente', 'close', state.settings.close, 'time', 'required')}${field('Prazo de resposta de referência (min)', 'responseMinutes', state.settings.responseMinutes, 'number', 'required min="5" max="1440"', true)}<div class="full"><span class="small">Dias de folga</span><div class="weekday-checks">${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d, i) => `<label><input type="checkbox" name="closedDays" value="${i}" ${state.settings.closedDays.includes(i) ? 'checked' : ''}>${d}</label>`).join('')}</div></div><div id="settings-error" role="alert" class="full small" style="color:var(--red)"></div><div class="full"><button type="submit" class="btn primary">Salvar rotina</button></div></div></form></section><section class="card settings-card" id="conta"><h2>Sua conta</h2><div class="setting-row account-row"><div><strong>${esc(accountEmail || "Sua conta")}</strong><p>${accountRole === 'admin' ? 'Titular. ' : ''}Entrada com e-mail e senha. Trocar a senha encerra o acesso nos outros aparelhos.</p></div><div class="row wrap gap8">${btn("Trocar e-mail", "change-email", "edit", "secondary sm")}${btn("Trocar senha", "change-password", "lock", "secondary sm")}<a class="btn secondary sm" href="/login" data-salon-logout>${icon("arrow")}Sair da conta</a></div></div></section>${salonsSection()}<section class="card settings-card"><h2>Conexões e acesso</h2><div class="setting-row"><div><strong>Dados persistentes</strong><p>Registros vinculados à conta autenticada, com conferência de versão para alterações simultâneas.</p></div>${pill(syncStatus === 'saved' ? 'Sincronizado' : 'Conferir', syncStatus === 'saved' ? 'green' : 'orange')}</div><div class="setting-row"><div><strong>WhatsApp Business</strong><p>O conector Baileys permite vincular por QR Code e receber e enviar textos, imagens e áudios. Requer um servidor Node sempre ligado. Confira a conexão em Atendimentos → WhatsApp. Notas internas continuam separadas.</p></div>${btn('Configurar', 'integrations', 'link', 'secondary sm')}</div><div class="setting-row"><div><strong>Inteligência artificial</strong><p>${aiStatus?.enabled ? `Classificação automática das conversas do WhatsApp, resumo e sugestão de resposta (Workers AI). Hoje: ${aiStatus.usage?.classify || 0} classificações, ${(aiStatus.usage?.summary || 0) + (aiStatus.usage?.reply || 0)} resumos/respostas. A IA só sugere; nada é enviado sem você.` : 'Classificação, resumo e sugestão de resposta com o Workers AI (gratuito até a cota diária). No computador, ligue com CONFIGURAR-IA.cmd; na nuvem, já vem ativa. Transcrição de áudio ainda não está ativada.'}</p></div>${pill(aiStatus?.enabled ? 'Ativa' : aiStatus ? 'Desligada' : 'Verificando', aiStatus?.enabled ? 'green' : 'gray')}</div><div class="setting-row"><div><strong>Acesso individual</strong><p>Cada salão entra com o próprio e-mail e senha e só vê os próprios registros. Esqueceu a senha? Use o link por e-mail na tela de entrada (ou o código de configuração da hospedagem). As sessões expiram em 12 horas.</p></div>${icon('shield')}</div></section><section class="card settings-card full"><h2>Histórico de ações confirmadas</h2><p class="small muted">As alterações salvas ficam registradas no servidor. Última sincronização: ${lastSavedAt ? new Date(lastSavedAt).toLocaleString('pt-BR') : 'nenhuma alteração ainda'}.</p>${state.audit.slice(0, 8).map(a => `<div class="audit-row">${esc(a.action)}<time>${new Date(a.at).toLocaleString('pt-BR')} · ${esc(a.by)}</time></div>`).join('') || empty('O histórico começa com sua primeira alteração.')}${state.audit.length ? btn('Histórico completo', 'audit', 'arrow', 'text') : ''}</section></div>`; }
 /**
  * help — Exibe orientação resumida e limitações da operação atual.
  */
